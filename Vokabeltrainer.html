@@ -2,158 +2,204 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - FINAL FIX</title>
+    <title>Vokabeltrainer - Final Fix</title>
     <style>
-        :root { --bg: #f4f7f6; --card: #ffffff; --text: #333; --accent: #007bff; --success: #28a745; }
-        body.dark { --bg: #121212; --card: #1e1e1e; --text: #f0f0f0; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 0.3s; margin: 0; min-height: 100vh; }
-        .container { background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; position: relative; margin-top: 40px; }
-        .nav-bar { display: flex; gap: 5px; margin-bottom: 20px; }
-        .nav-bar button { flex: 1; padding: 6px; font-size: 0.7rem; cursor: pointer; border: none; border-radius: 4px; background: #6c757d; color: white; }
-        input, .btn { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1rem; }
-        .btn { border: none; color: white; font-weight: bold; cursor: pointer; }
-        .btn-blue { background: #007bff; }
-        .btn-green { background: #28a745; margin-top: 15px; }
-        .hidden { display: none !important; }
-        
-        /* SUPER ANIMATION */
-        #bigEmoji { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 150px; z-index: 1001; pointer-events: none; opacity: 0; }
-        .pop { animation: emojiPop 3s ease-out forwards; }
-        @keyframes emojiPop {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            100% { transform: translate(-50%, -150%) scale(0.5); opacity: 0; }
-        }
+        :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
+        body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 0.3s; }
+        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 500px; }
+        .top-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+        .top-bar button { flex: 1; padding: 10px; cursor: pointer; border-radius: 6px; border: none; background: #65676b; color: white; font-size: 0.8rem; }
+        .btn-accent { background: var(--accent) !important; }
+        input, select, .main-btn { margin: 10px 0; padding: 12px; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; background: var(--card); color: var(--text); font-size: 1rem; }
+        .main-btn { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
+        .stats-live { font-size: 1.1rem; font-weight: bold; text-align: center; margin-bottom: 15px; color: var(--accent); }
+        #feedback { min-height: 30px; margin: 15px 0; font-weight: bold; text-align: center; font-size: 1.2rem; }
+        .hidden { display: none; }
+        .list-preview { margin-top: 20px; max-height: 150px; overflow-y: auto; font-size: 0.8rem; border-top: 1px solid #ccc; padding-top: 10px; }
+        @keyframes successPop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .correct-anim { animation: successPop 0.4s ease; border: 2px solid var(--success) !important; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        .wrong-anim { animation: shake 0.4s ease; border: 2px solid var(--error) !important; }
     </style>
 </head>
-<body>
-
-<div id="bigEmoji">🎉</div>
+<body onload="loadFromStorage()">
 
 <div class="container">
-    <div class="nav-bar">
-        <button onclick="document.body.classList.toggle('dark')">🌓 Mode</button>
-        <button onclick="exportData()">💾 Export</button>
-        <button onclick="document.getElementById('fileInput').click()">📂 Import</button>
-        <button onclick="resetData()" style="background:#dc3545">🗑️ Reset</button>
-        <input type="file" id="fileInput" class="hidden" onchange="importData(this)" accept=".json">
+    <div class="top-bar">
+        <button class="btn-accent" onclick="toggleDark()">🌓 Dark Mode</button>
+        <button onclick="exportList()">💾 Export</button>
+        <button onclick="document.getElementById('importFile').click()">📂 Import</button>
+        <button onclick="clearList()" style="background: var(--error)">🗑️ Löschen</button>
+        <input type="file" id="importFile" class="hidden" onchange="importList(this)" accept=".json">
     </div>
 
-    <div id="view1">
-        <h2>Vokabeln</h2>
-        <input type="text" id="inF" placeholder="Fremdsprache">
-        <input type="text" id="inG" placeholder="Deutsch">
-        <button class="btn btn-blue" onclick="add()">Hinzufügen</button>
-        <p>Anzahl: <b id="cnt">0</b></p>
+    <div id="inputArea">
+        <h2>Vokabeln verwalten</h2>
+        <input type="text" id="foreign" placeholder="Fremdsprache">
+        <input type="text" id="german" placeholder="Deutsch">
+        <button class="main-btn" onclick="addWord()">Wort hinzufügen</button>
+        <p style="text-align: center;">Vokabeln in der Liste: <b id="wordCount">0</b></p>
+        
+        <div id="preview" class="list-preview">Keine Wörter vorhanden.</div>
+
         <hr>
-        <button class="btn btn-green" onclick="start()">START</button>
+        <select id="mode">
+            <option value="de">Deutsch abfragen</option>
+            <option value="foreign">Fremdsprache abfragen</option>
+            <option value="mixed">Zufällig gemischt</option>
+        </select>
+        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">Training starten</button>
     </div>
 
-    <div id="view2" class="hidden">
-        <div id="stats" style="font-weight:bold; color:#007bff;">Richtig: <span id="okNum">0</span> von <span id="totalNum">0</span></div>
-        <h1 id="qText">---</h1>
-        <input type="text" id="ansIn" placeholder="Antwort..." autocomplete="off">
-        <button class="btn btn-blue" onclick="check()">Überprüfen</button>
-        <p id="feedback" style="font-weight:bold;"></p>
+    <div id="trainingArea" class="hidden">
+        <div class="stats-live">Richtig: <span id="correctNum">0</span> von <span id="processedNum">0</span></div>
+        <h1 id="qWord" style="text-align: center;">---</h1>
+        <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
+        <button class="main-btn" onclick="check()">Überprüfen</button>
+        <button class="main-btn" style="background: #65676b" onclick="skip()">Weiß ich nicht</button>
+        <p id="feedback"></p>
     </div>
 
-    <div id="view3" class="hidden">
-        <h2>Ergebnis</h2>
-        <div id="resBox"></div>
-        <button class="btn btn-green" onclick="location.reload()">Neustart</button>
+    <div id="resultArea" class="hidden">
+        <h2 style="text-align: center;">Ergebnis</h2>
+        <div id="statsDetails"></div>
+        <button class="main-btn" onclick="location.reload()">Neustart</button>
     </div>
 </div>
 
 <script>
-    let list = [], session = [], wrongs = [], tries = {}, idx = 0, oks = 0, current = {};
+    let vocab = [], session = [], wrongs = [], attempts = {};
+    let correctInSession = 0, currentIdx = 0, task = {};
 
-    // LADEN BEIM START
-    window.onload = function() {
-        const saved = localStorage.getItem('vok_v_final');
-        if(saved) { list = JSON.parse(saved); document.getElementById('cnt').innerText = list.length; }
-    };
+    function toggleDark() { document.body.classList.toggle('dark'); }
 
-    function add() {
-        const f = document.getElementById('inF').value.trim();
-        const g = document.getElementById('inG').value.trim();
-        if(f && g) {
-            list.push({f, g, id: Date.now()});
-            localStorage.setItem('vok_v_final', JSON.stringify(list));
-            document.getElementById('cnt').innerText = list.length;
-            document.getElementById('inF').value = ''; document.getElementById('inG').value = '';
-            document.getElementById('inF').focus();
+    function saveToStorage() {
+        localStorage.setItem('vocab_v3', JSON.stringify(vocab));
+        updateUI();
+    }
+
+    function loadFromStorage() {
+        const data = localStorage.getItem('vocab_v3');
+        if (data) {
+            vocab = JSON.parse(data);
+        }
+        updateUI();
+    }
+
+    function updateUI() {
+        document.getElementById('wordCount').innerText = vocab.length;
+        const preview = document.getElementById('preview');
+        if (vocab.length > 0) {
+            preview.innerHTML = "<b>Vorschau:</b><br>" + vocab.slice(-5).map(v => `${v.f} = ${v.g}`).join('<br>');
+        } else {
+            preview.innerHTML = "Keine Wörter vorhanden.";
         }
     }
 
-    function start() {
-        if(list.length === 0) return alert("Bitte Vokabeln eingeben!");
-        session = [...list].sort(() => Math.random() - 0.5);
-        wrongs = []; idx = 0; oks = 0; tries = {};
-        list.forEach(v => tries[v.id] = 1);
-        document.getElementById('view1').classList.add('hidden');
-        document.getElementById('view2').classList.remove('hidden');
+    function clearList() {
+        if(confirm("Alles löschen?")) { vocab = []; saveToStorage(); }
+    }
+
+    function addWord() {
+        const f = document.getElementById('foreign').value.trim(), g = document.getElementById('german').value.trim();
+        if(f && g) {
+            vocab.push({f, g, id: Date.now() + Math.random()});
+            saveToStorage();
+            document.getElementById('foreign').value = ''; document.getElementById('german').value = '';
+            document.getElementById('foreign').focus();
+        }
+    }
+
+    function exportList() {
+        if(vocab.length === 0) return alert("Liste leer!");
+        const blob = new Blob([JSON.stringify(vocab)], {type: "application/json"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "vokabeln.json";
+        a.click();
+    }
+
+    // DER WICHTIGE FIX: Zugriff auf input.files[0]
+    function importList(inputElement) {
+        const file = inputElement.files[0]; 
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (Array.isArray(imported)) {
+                    vocab = imported;
+                    saveToStorage();
+                    alert("Erfolg! " + vocab.length + " Wörter geladen.");
+                }
+            } catch (err) { alert("Fehler beim Lesen der Datei!"); }
+        };
+        reader.readAsText(file);
+        inputElement.value = ""; 
+    }
+
+    function startTraining() {
+        if(vocab.length === 0) return;
+        session = [...vocab].sort(() => Math.random() - 0.5);
+        wrongs = []; currentIdx = 0; correctInSession = 0; attempts = {};
+        vocab.forEach(v => attempts[v.id] = 1);
+        show('trainingArea');
         next();
     }
 
     function next() {
-        if(idx >= session.length) {
+        if(currentIdx >= session.length) {
             if(wrongs.length > 0) {
-                alert("Fehlerrunde!"); session = [...wrongs].sort(() => Math.random() - 0.5);
-                wrongs = []; idx = 0; next();
-            } else { finish(); return; }
+                session = [...wrongs].sort(() => Math.random() - 0.5);
+                wrongs = []; currentIdx = 0; next();
+            } else { show('resultArea'); renderStats(); return; }
         }
-        document.getElementById('okNum').innerText = oks;
-        document.getElementById('totalNum').innerText = idx + 1;
-        current = { q: session[idx].f, a: session[idx].g, id: session[idx].id };
-        document.getElementById('qText').innerText = current.q;
-        document.getElementById('ansIn').value = ''; document.getElementById('feedback').innerText = '';
-        document.getElementById('ansIn').focus();
+        document.getElementById('correctNum').innerText = correctInSession;
+        document.getElementById('processedNum').innerText = currentIdx + 1;
+        let word = session[currentIdx], m = document.getElementById('mode').value;
+        let askF = m === 'foreign' || (m === 'mixed' && Math.random() > 0.5);
+        task = { q: askF ? word.g : word.f, a: askF ? word.f : word.g, id: word.id };
+        document.getElementById('qWord').innerText = task.q;
+        const inp = document.getElementById('ansInput');
+        inp.value = ''; inp.className = ''; document.getElementById('feedback').innerText = '';
+        inp.focus();
     }
 
     function check() {
-        const val = document.getElementById('ansIn').value.trim().toLowerCase();
-        if(val === current.a.toLowerCase()) {
-            if(!wrongs.includes(session[idx])) oks++;
-            const em = document.getElementById('bigEmoji');
-            em.innerText = ['🎉','✨','⭐','🏆'][Math.floor(Math.random()*4)];
-            em.classList.remove('pop'); void em.offsetWidth; em.classList.add('pop');
+        const inp = document.getElementById('ansInput');
+        if(inp.value.trim().toLowerCase() === task.a.toLowerCase()) {
+            if(!wrongs.includes(session[currentIdx])) correctInSession++;
             document.getElementById('feedback').innerText = "✅ Richtig!";
-            idx++; setTimeout(next, 1000);
+            inp.classList.add('correct-anim');
+            currentIdx++; setTimeout(next, 700);
         } else {
-            document.getElementById('feedback').innerText = "❌ Lösung: " + current.a;
-            if(!wrongs.includes(session[idx])) { wrongs.push(session[idx]); tries[current.id]++; }
-            idx++; setTimeout(next, 2500);
+            document.getElementById('feedback').innerText = "❌ Falsch! Lösung: " + task.a;
+            inp.classList.add('wrong-anim');
+            if(!wrongs.includes(session[currentIdx])) { wrongs.push(session[currentIdx]); attempts[task.id]++; }
+            currentIdx++; setTimeout(next, 2000);
         }
     }
 
-    function exportData() {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([JSON.stringify(list)], {type:"application/json"}));
-        a.download = "vokabeln.json"; a.click();
+    function skip() {
+        document.getElementById('feedback').innerText = "Lösung: " + task.a;
+        if(!wrongs.includes(session[currentIdx])) { wrongs.push(session[currentIdx]); attempts[task.id]++; }
+        currentIdx++; setTimeout(next, 2000);
     }
 
-    function importData(input) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            list = JSON.parse(e.target.result);
-            localStorage.setItem('vok_v_final', JSON.stringify(list));
-            document.getElementById('cnt').innerText = list.length;
-            alert("Geladen!");
-        };
-        reader.readAsText(input.files[0]);
+    function renderStats() {
+        let h = "<ul>", s = {};
+        Object.values(attempts).forEach(a => s[a] = (s[a] || 0) + 1);
+        for(let a in s) h += `<li><b>${s[a]} Wörter</b> im ${a}. Versuch gelöst</li>`;
+        document.getElementById('statsDetails').innerHTML = h + "</ul>";
     }
 
-    function resetData() { if(confirm("Löschen?")) { localStorage.clear(); location.reload(); } }
-
-    function finish() {
-        document.getElementById('view2').classList.add('hidden');
-        document.getElementById('view3').classList.remove('hidden');
-        let h = "<ul>";
-        for(let id in tries) { h += `<li>Wort gelöst im ${tries[id]}. Versuch</li>`; }
-        document.getElementById('resBox').innerHTML = h + "</ul>";
+    function show(id) {
+        ['inputArea', 'trainingArea', 'resultArea'].forEach(i => document.getElementById(i).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
     }
-
-    document.getElementById('ansIn').onkeydown = (e) => { if(e.key === 'Enter') check(); };
+    document.getElementById('ansInput').onkeypress = (e) => { if(e.key === 'Enter') check(); };
 </script>
 </body>
 </html>
