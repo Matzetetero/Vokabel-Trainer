@@ -2,40 +2,53 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Finaler Fix</title>
+    <title>Vokabeltrainer - Green Flash Edition</title>
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 0.3s; margin: 0; overflow: hidden; }
-        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 500px; position: relative; z-index: 10; }
+        
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px; 
+            transition: background 0.3s ease; /* Wichtig für das weiche Aufleuchten */
+            margin: 0; 
+        }
+
+        /* Klasse für den grünen Blitz */
+        body.correct-flash {
+            background-color: var(--success) !important;
+        }
+
+        .container { 
+            background: var(--card); 
+            padding: 25px; 
+            border-radius: 15px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2); 
+            width: 100%; 
+            max-width: 500px; 
+            transition: transform 0.2s;
+        }
+
         .top-bar { display: flex; gap: 8px; margin-bottom: 20px; }
         .top-bar button { flex: 1; padding: 10px; cursor: pointer; border-radius: 6px; border: none; background: #65676b; color: white; font-size: 0.8rem; }
-        input, select, .main-btn { margin: 10px 0; padding: 12px; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; background: var(--card); color: var(--text); font-size: 1rem; }
+        
+        input, select, .main-btn { 
+            margin: 10px 0; padding: 12px; width: 100%; 
+            box-sizing: border-box; border-radius: 8px; 
+            border: 1px solid #ccc; background: var(--card); 
+            color: var(--text); font-size: 1rem; 
+        }
+
         .main-btn { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
-        .stats-live { font-size: 1.1rem; font-weight: bold; text-align: center; margin-bottom: 15px; color: var(--accent); }
-        #feedback { min-height: 30px; margin: 15px 0; font-weight: bold; text-align: center; font-size: 1.2rem; }
         .hidden { display: none; }
-        .list-preview { margin-top: 20px; max-height: 150px; overflow-y: auto; font-size: 0.8rem; border-top: 1px solid #ccc; padding-top: 10px; }
+        #feedback { text-align: center; font-weight: bold; font-size: 1.2rem; min-height: 1.5em; }
 
-        /* GARANTIERTE KONFETTI-ANIMATION */
-        .confetti-piece {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background: #ffd300;
-            top: -20px;
-            opacity: 0;
-            z-index: 5;
-            animation: fall 2s ease-out forwards;
-        }
-
-        @keyframes fall {
-            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-        }
-
-        @keyframes successPop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        .correct-anim { animation: successPop 0.4s ease; border: 2px solid var(--success) !important; }
+        /* Animationen für das Eingabefeld */
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
         .wrong-anim { animation: shake 0.4s ease; border: 2px solid var(--error) !important; }
     </style>
@@ -46,25 +59,20 @@
     <div class="top-bar">
         <button onclick="toggleDark()">🌓 Dark Mode</button>
         <button onclick="exportList()">💾 Export</button>
-        <button onclick="document.getElementById('importFile').click()">📂 Import</button>
         <button onclick="clearList()" style="background: var(--error)">🗑️ Löschen</button>
-        <input type="file" id="importFile" class="hidden" onchange="importList(this)" accept=".json">
     </div>
 
     <div id="inputArea">
         <h2>Vokabeln verwalten</h2>
         <input type="text" id="foreign" placeholder="Fremdsprache">
         <input type="text" id="german" placeholder="Deutsch">
-        <button class="main-btn" onclick="addWord()">Wort hinzufügen</button>
-        <p style="text-align: center;">Vokabeln: <b id="wordCount">0</b></p>
-        <div id="preview" class="list-preview">Keine Wörter.</div>
+        <button class="main-btn" onclick="addWord()">Hinzufügen</button>
+        <p style="text-align: center;">Wörter in Liste: <b id="wordCount">0</b></p>
         <hr>
-        <select id="mode"><option value="mixed">Zufällig</option></select>
-        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">Start</button>
+        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">Training starten</button>
     </div>
 
     <div id="trainingArea" class="hidden">
-        <div class="stats-live">Richtig: <span id="correctNum">0</span> von <span id="processedNum">0</span></div>
         <h1 id="qWord" style="text-align: center;">---</h1>
         <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
         <button class="main-btn" onclick="check()">Überprüfen</button>
@@ -73,71 +81,98 @@
 
     <div id="resultArea" class="hidden">
         <h2 style="text-align: center;">Ergebnis</h2>
-        <div id="statsDetails"></div>
+        <div id="statsDetails" style="text-align: center; font-size: 2rem;"></div>
         <button class="main-btn" onclick="location.reload()">Neustart</button>
     </div>
 </div>
 
 <script>
-    let vocab = [], session = [], wrongs = [], attempts = {}, correctInSession = 0, currentIdx = 0, task = {};
-
-    function triggerConfetti() {
-        const colors = ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6'];
-        for (let i = 0; i < 40; i++) {
-            const piece = document.createElement('div');
-            piece.className = 'confetti-piece';
-            piece.style.left = Math.random() * 100 + 'vw';
-            piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            piece.style.animationDelay = Math.random() * 0.5 + 's';
-            piece.style.width = (Math.random() * 10 + 5) + 'px';
-            piece.style.height = piece.style.width;
-            document.body.appendChild(piece);
-            setTimeout(() => piece.remove(), 2500);
-        }
-    }
+    let vocab = [], session = [], currentIdx = 0, task = {}, correctInSession = 0;
 
     function toggleDark() { document.body.classList.toggle('dark'); }
-    function saveToStorage() { localStorage.setItem('vok_v4', JSON.stringify(vocab)); updateUI(); }
-    function loadFromStorage() { vocab = JSON.parse(localStorage.getItem('vok_v4') || '[]'); updateUI(); }
-    function updateUI() { 
+
+    function saveToStorage() {
+        localStorage.setItem('vocab_simple', JSON.stringify(vocab));
         document.getElementById('wordCount').innerText = vocab.length;
-        document.getElementById('preview').innerHTML = vocab.length > 0 ? vocab.slice(-3).map(v => `${v.f} = ${v.g}`).join('<br>') : "Leer";
+    }
+
+    function loadFromStorage() {
+        vocab = JSON.parse(localStorage.getItem('vocab_simple') || '[]');
+        document.getElementById('wordCount').innerText = vocab.length;
     }
 
     function addWord() {
-        const f = document.getElementById('foreign').value, g = document.getElementById('german').value;
-        if(f && g) { vocab.push({f, g, id: Date.now()}); saveToStorage(); document.getElementById('foreign').value = ''; document.getElementById('german').value = ''; }
+        const f = document.getElementById('foreign').value.trim();
+        const g = document.getElementById('german').value.trim();
+        if(f && g) {
+            vocab.push({f, g});
+            saveToStorage();
+            document.getElementById('foreign').value = '';
+            document.getElementById('german').value = '';
+            document.getElementById('foreign').focus();
+        }
     }
 
     function startTraining() {
-        if(vocab.length === 0) return;
+        if(vocab.length === 0) return alert("Liste ist leer!");
         session = [...vocab].sort(() => Math.random() - 0.5);
-        currentIdx = 0; correctInSession = 0;
-        show('trainingArea'); next();
+        currentIdx = 0;
+        correctInSession = 0;
+        show('trainingArea');
+        next();
     }
 
     function next() {
-        if(currentIdx >= session.length) { show('resultArea'); document.getElementById('statsDetails').innerHTML = `<h3>${correctInSession} / ${session.length} richtig!</h3>`; return; }
+        if(currentIdx >= session.length) {
+            show('resultArea');
+            document.getElementById('statsDetails').innerText = `${correctInSession} / ${session.length} richtig!`;
+            return;
+        }
         task = { q: session[currentIdx].f, a: session[currentIdx].g };
         document.getElementById('qWord').innerText = task.q;
-        document.getElementById('ansInput').value = '';
-        document.getElementById('ansInput').className = '';
+        const inp = document.getElementById('ansInput');
+        inp.value = '';
+        inp.className = '';
+        document.getElementById('feedback').innerText = '';
+        inp.focus();
     }
 
     function check() {
         const inp = document.getElementById('ansInput');
+        const fb = document.getElementById('feedback');
+        
         if(inp.value.trim().toLowerCase() === task.a.toLowerCase()) {
-            triggerConfetti();
-            inp.classList.add('correct-anim');
+            // --- DIE FARB-ANIMATION ---
+            document.body.classList.add('correct-flash'); // Hintergrund grün machen
+            fb.innerText = "Richtig! ✔";
             correctInSession++;
-            setTimeout(() => { currentIdx++; next(); }, 1000);
+            
+            setTimeout(() => {
+                document.body.classList.remove('correct-flash'); // Farbe zurücksetzen
+                currentIdx++;
+                next();
+            }, 800); // 0.8 Sekunden warten
         } else {
             inp.classList.add('wrong-anim');
+            fb.innerText = "Leider falsch!";
+            fb.style.color = "var(--error)";
         }
     }
 
-    function show(id) { document.querySelectorAll('.container > div').forEach(d => d.id !== 'trainingArea' && d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
-    document.getElementById("ansInput").addEventListener("keypress", (e) => e.key === "Enter" && check());
+    function show(id) {
+        ['inputArea', 'trainingArea', 'resultArea'].forEach(a => {
+            document.getElementById(a).classList.toggle('hidden', a !== id);
+        });
+    }
+
+    function clearList() {
+        if(confirm("Alles löschen?")) { vocab = []; saveToStorage(); }
+    }
+
+    document.getElementById("ansInput").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") check();
+    });
 </script>
+
 </body>
 </html>
