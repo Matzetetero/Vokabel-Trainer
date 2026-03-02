@@ -2,189 +2,185 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Absolute Final Fix</title>
+    <title>Vokabeltrainer Pro</title>
     <style>
-        :root { --bg: #f4f4f9; --card: #ffffff; --text: #1a1a1a; --accent: #007bff; --success: #28a745; }
-        body.dark { --bg: #121212; --card: #1e1e1e; --text: #f0f0f0; --accent: #375a7f; }
+        :root { --bg: #f4f7f6; --card: #ffffff; --text: #333; --accent: #007bff; --success: #28a745; }
+        body.dark { --bg: #121212; --card: #1e1e1e; --text: #f0f0f0; --accent: #375a7f; --success: #2ecc71; }
         
         body { font-family: sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 0.3s; margin: 0; min-height: 100vh; }
-        .container { background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); width: 90%; max-width: 450px; text-align: center; position: relative; z-index: 5; }
+        .container { background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; position: relative; margin-top: 40px; }
         
-        /* NAVIGATION OBEN */
-        .nav { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 15px; }
-        .nav button { flex: 1; padding: 8px; font-size: 0.75rem; cursor: pointer; border: none; border-radius: 4px; background: #6c757d; color: white; }
+        /* NAVIGATION OBEN (DARK MODE, IMPORT, EXPORT) */
+        .nav-bar { display: flex; gap: 5px; margin-bottom: 20px; }
+        .nav-bar button { flex: 1; padding: 6px; font-size: 0.7rem; cursor: pointer; border: none; border-radius: 4px; background: #6c757d; color: white; transition: 0.2s; }
+        .nav-bar button:hover { opacity: 0.8; }
 
-        input, select, .btn-main { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1rem; }
-        .btn-main { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; }
+        input, .btn { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1rem; transition: 0.2s; }
+        .btn { border: none; color: white; font-weight: bold; cursor: pointer; }
+        .btn-blue { background: #007bff; }
+        .btn-green { background: #28a745; margin-top: 15px; }
         .hidden { display: none !important; }
 
-        /* LIVE STATS */
-        .live-stats { font-weight: bold; color: var(--accent); margin-bottom: 10px; font-size: 1.1rem; }
+        /* LIVE-ANZEIGE & FEEDBACK */
+        .stats { font-weight: bold; color: var(--accent); margin-bottom: 10px; font-size: 1.1rem; }
+        #feedback { font-weight: bold; min-height: 1.5em; margin-top: 10px; font-size: 1.2rem; }
 
-        /* --- DIE ANIMATIONEN --- */
-        #flashOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--success); opacity: 0; pointer-events: none; z-index: 1000; transition: opacity 0.1s; }
-        #bigEmoji { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 150px; z-index: 1001; pointer-events: none; opacity: 0; }
-        
-        .ani-pop { animation: emojiPop 4s forwards; }
+        /* SUPER-ANIMATIONEN */
+        #flash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--success); opacity: 0; pointer-events: none; z-index: 1000; transition: opacity 0.1s; }
+        #bigEmoji { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 160px; z-index: 1001; pointer-events: none; opacity: 0; }
+        .pop { animation: emojiPop 4s ease-out forwards; }
         @keyframes emojiPop {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-            15% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            85% { transform: translate(-50%, -80%) scale(1); opacity: 1; }
+            15% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            80% { transform: translate(-50%, -80%) scale(1); opacity: 1; }
             100% { transform: translate(-50%, -150%) scale(0.5); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
-<div id="flashOverlay"></div>
+<div id="flash"></div>
 <div id="bigEmoji">🎉</div>
 
 <div class="container">
-    <div class="nav">
+    <!-- EXTRA FUNKTIONS-LEISTE -->
+    <div class="nav-bar">
         <button onclick="document.body.classList.toggle('dark')">🌓 Dark Mode</button>
-        <button onclick="exportList()">💾 Export</button>
-        <button onclick="document.getElementById('fileIn').click()">📂 Import</button>
-        <button onclick="clearList()" style="background:#dc3545">🗑️ Reset</button>
-        <input type="file" id="fileIn" class="hidden" onchange="importList(event)" accept=".json">
+        <button onclick="exportData()">💾 Export</button>
+        <button onclick="document.getElementById('fileInput').click()">📂 Import</button>
+        <button onclick="resetData()" style="background:#dc3545">🗑️ Reset</button>
+        <input type="file" id="fileInput" class="hidden" onchange="importData(event)" accept=".json">
     </div>
 
-    <!-- SEITE 1: EINGABE -->
-    <div id="viewInput">
-        <h2>Vokabeln eingeben</h2>
+    <!-- ANSICHT 1: EINGABE (WIE IM BILD) -->
+    <div id="view1">
+        <h2 style="margin-top: 0;">Vokabeln</h2>
         <input type="text" id="inF" placeholder="Fremdsprache">
         <input type="text" id="inG" placeholder="Deutsch">
-        <button class="btn-main" onclick="add()">Hinzufügen</button>
-        <p>Wörter in Liste: <b id="count">0</b></p>
-        <hr>
-        <button class="btn-main" style="background:var(--success)" onclick="start()">Training starten</button>
+        <button class="btn btn-blue" onclick="add()">Hinzufügen</button>
+        <p>Anzahl: <b id="cnt">0</b></p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        <select id="mode" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px;">
+            <option value="de">Deutsch abfragen</option>
+            <option value="foreign">Fremdsprache abfragen</option>
+            <option value="mixed">Zufällig gemischt</option>
+        </select>
+        <button class="btn btn-green" onclick="start()">START</button>
     </div>
 
-    <!-- SEITE 2: TRAINING -->
-    <div id="viewTrain" class="hidden">
-        <div class="live-stats">Richtig: <span id="statOk">0</span> von <span id="statTotal">0</span></div>
-        <h1 id="question">---</h1>
-        <input type="text" id="answer" placeholder="Antwort..." autocomplete="off">
-        <button class="btn-main" onclick="check()">Überprüfen</button>
-        <p id="feedback" style="font-weight:bold; min-height:1.5em;"></p>
+    <!-- ANSICHT 2: TRAINING -->
+    <div id="view2" class="hidden">
+        <div class="stats">Richtig: <span id="okNum">0</span> von <span id="totalNum">0</span></div>
+        <h1 id="qText" style="font-size: 2.5rem; margin: 15px 0;">---</h1>
+        <input type="text" id="ansIn" placeholder="Deine Antwort..." autocomplete="off">
+        <button class="btn btn-blue" onclick="check()">Überprüfen</button>
+        <p id="feedback"></p>
     </div>
 
-    <!-- SEITE 3: ERGEBNIS -->
-    <div id="viewResult" class="hidden">
+    <!-- ANSICHT 3: RESULTAT -->
+    <div id="view3" class="hidden">
         <h2>Ergebnis</h2>
-        <div id="statsBox"></div>
-        <button class="btn-main" onclick="location.reload()">Neustart</button>
+        <div id="resBox" style="text-align: left;"></div>
+        <button class="btn btn-green" onclick="location.reload()">Neustart</button>
     </div>
 </div>
 
 <script>
-    let vocabs = [], session = [], wrongs = [], attempts = {}, idx = 0, correctCount = 0, current = {};
+    let list = [], session = [], wrongs = [], tries = {}, idx = 0, oks = 0, current = {};
 
-    // DATEN LADEN BEIM START
-    window.onload = function() {
-        const saved = localStorage.getItem('vok_data_final_fix');
-        if(saved) {
-            vocabs = JSON.parse(saved);
-            document.getElementById('count').innerText = vocabs.length;
-        }
+    window.onload = () => {
+        const saved = localStorage.getItem('vok_v_final_image');
+        if(saved) { list = JSON.parse(saved); document.getElementById('cnt').innerText = list.length; }
     };
 
     function add() {
-        const f = document.getElementById('inF').value.trim();
-        const g = document.getElementById('inG').value.trim();
+        const f = document.getElementById('inF').value.trim(), g = document.getElementById('inG').value.trim();
         if(f && g) {
-            vocabs.push({f, g, id: Date.now() + Math.random()});
-            localStorage.setItem('vok_data_final_fix', JSON.stringify(vocabs));
-            document.getElementById('count').innerText = vocabs.length;
+            list.push({f, g, id: Date.now() + Math.random()});
+            localStorage.setItem('vok_v_final_image', JSON.stringify(list));
+            document.getElementById('cnt').innerText = list.length;
             document.getElementById('inF').value = ''; document.getElementById('inG').value = '';
             document.getElementById('inF').focus();
         }
     }
 
     function start() {
-        if(vocabs.length === 0) return alert("Bitte erst Vokabeln eingeben!");
-        session = [...vocabs].sort(() => Math.random() - 0.5);
-        wrongs = []; idx = 0; correctCount = 0; attempts = {};
-        vocabs.forEach(v => attempts[v.id] = 1);
-        show('viewTrain');
+        if(list.length === 0) return alert("Zuerst Vokabeln hinzufügen!");
+        session = [...list].sort(() => Math.random() - 0.5);
+        wrongs = []; idx = 0; oks = 0; tries = {};
+        list.forEach(v => tries[v.id] = 1);
+        document.getElementById('view1').classList.add('hidden');
+        document.getElementById('view2').classList.remove('hidden');
         next();
     }
 
     function next() {
         if(idx >= session.length) {
             if(wrongs.length > 0) {
-                alert("Fehler werden wiederholt!");
+                alert("Fehlerrunde startet!");
                 session = [...wrongs].sort(() => Math.random() - 0.5);
                 wrongs = []; idx = 0; next();
-            } else { show('viewResult'); renderStats(); return; }
+            } else { finish(); return; }
         }
-        document.getElementById('statOk').innerText = correctCount;
-        document.getElementById('statTotal').innerText = idx + 1;
-        current = { q: session[idx].f, a: session[idx].g, id: session[idx].id };
-        document.getElementById('question').innerText = current.q;
-        document.getElementById('answer').value = '';
-        document.getElementById('feedback').innerText = '';
-        document.getElementById('answer').focus();
+        document.getElementById('okNum').innerText = oks;
+        document.getElementById('totalNum').innerText = idx + 1;
+        const m = document.getElementById('mode').value;
+        const askF = m === 'foreign' || (m === 'mixed' && Math.random() > 0.5);
+        current = { q: askF ? session[idx].g : session[idx].f, a: askF ? session[idx].f : session[idx].g, id: session[idx].id };
+        document.getElementById('qText').innerText = current.q;
+        document.getElementById('ansIn').value = ''; document.getElementById('feedback').innerText = '';
+        document.getElementById('ansIn').focus();
     }
 
     function check() {
-        const ans = document.getElementById('answer').value.trim().toLowerCase();
-        if(ans === current.a.toLowerCase()) {
-            if(!wrongs.includes(session[idx])) correctCount++;
+        const user = document.getElementById('ansIn').value.trim().toLowerCase();
+        if(user === current.a.toLowerCase()) {
+            if(!wrongs.includes(session[idx])) oks++;
             
             // --- DIE SUPER ANIMATION ---
-            const flash = document.getElementById('flashOverlay');
-            flash.style.opacity = "0.5";
-            setTimeout(() => flash.style.opacity = "0", 200);
-
-            const emoji = document.getElementById('bigEmoji');
-            emoji.innerText = ['🎉','✨','⭐','🏆','🔥'][Math.floor(Math.random()*5)];
-            emoji.classList.remove('ani-pop');
-            void emoji.offsetWidth; // Force Restart
-            emoji.classList.add('ani-pop');
+            const fl = document.getElementById('flash');
+            fl.style.opacity = "0.4"; setTimeout(() => fl.style.opacity = "0", 150);
+            const em = document.getElementById('bigEmoji');
+            em.innerText = ['🎉','✨','⭐','🏆','💎'][Math.floor(Math.random()*5)];
+            em.classList.remove('pop'); void em.offsetWidth; em.classList.add('pop');
 
             document.getElementById('feedback').innerText = "✅ RICHTIG!";
             idx++; setTimeout(next, 1200);
         } else {
             document.getElementById('feedback').innerText = "❌ Lösung: " + current.a;
-            if(!wrongs.includes(session[idx])) { wrongs.push(session[idx]); attempts[current.id]++; }
+            if(!wrongs.includes(session[idx])) { wrongs.push(session[idx]); tries[current.id]++; }
             idx++; setTimeout(next, 2500);
         }
     }
 
-    function exportList() {
-        const blob = new Blob([JSON.stringify(vocabs)], {type: "application/json"});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = "vokabeln.json"; a.click();
+    function exportData() {
+        const b = new Blob([JSON.stringify(list)], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = "vokabeln.json"; a.click();
     }
 
-    function importList(e) {
-        const file = e.target.files[0];
-        if(!file) return;
+    function importData(e) {
         const reader = new FileReader();
-        reader.onload = function(ev) {
-            vocabs = JSON.parse(ev.target.result);
-            localStorage.setItem('vok_data_final_fix', JSON.stringify(vocabs));
-            document.getElementById('count').innerText = vocabs.length;
-            alert("Erfolg!");
+        reader.onload = (ev) => {
+            list = JSON.parse(ev.target.result);
+            localStorage.setItem('vok_v_final_image', JSON.stringify(list));
+            document.getElementById('cnt').innerText = list.length;
+            alert("Erfolgreich geladen!");
         };
-        reader.readAsText(file);
+        reader.readAsText(e.target.files[0]); // FIXED: Greift auf die erste Datei zu
     }
 
-    function clearList() { if(confirm("Alles löschen?")) { vocabs = []; localStorage.clear(); location.reload(); } }
+    function resetData() { if(confirm("Alles löschen?")) { list = []; localStorage.clear(); location.reload(); } }
 
-    function show(id) {
-        ['viewInput', 'viewTrain', 'viewResult'].forEach(v => document.getElementById(v).classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-    }
-
-    function renderStats() {
+    function finish() {
+        document.getElementById('view2').classList.add('hidden');
+        document.getElementById('view3').classList.remove('hidden');
         let h = "<ul>", s = {};
-        Object.values(attempts).forEach(a => s[a] = (s[a] || 0) + 1);
+        Object.values(tries).forEach(v => s[v] = (s[v] || 0) + 1);
         for(let k in s) h += `<li><b>${s[k]} Wörter</b> im ${k}. Versuch</li>`;
-        document.getElementById('statsBox').innerHTML = h + "</ul>";
+        document.getElementById('resBox').innerHTML = h + "</ul>";
     }
 
-    document.getElementById('answer').onkeydown = (e) => { if(e.key === 'Enter') check(); };
+    document.getElementById('ansIn').onkeydown = (e) => { if(e.key === 'Enter') check(); };
 </script>
 </body>
 </html>
