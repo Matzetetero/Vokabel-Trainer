@@ -2,51 +2,22 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Pro</title>
+    <title>Vokabeltrainer Pro</title>
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: background 0.4s; margin: 0; }
         
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 20px; 
-            transition: background 0.4s ease; 
-            margin: 0; 
-        }
-
-        /* Der grüne Blitz-Effekt */
+        /* DER BLITZ-EFFEKT */
         body.correct-flash { background-color: var(--success) !important; }
 
-        .container { 
-            background: var(--card); 
-            padding: 25px; 
-            border-radius: 15px; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2); 
-            width: 100%; 
-            max-width: 500px; 
-        }
-
+        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 500px; }
         .top-bar { display: flex; gap: 8px; margin-bottom: 20px; }
         .top-bar button { flex: 1; padding: 10px; cursor: pointer; border-radius: 6px; border: none; background: #65676b; color: white; font-size: 0.8rem; }
-        
-        input, select, .main-btn { 
-            margin: 10px 0; padding: 12px; width: 100%; 
-            box-sizing: border-box; border-radius: 8px; 
-            border: 1px solid #ccc; background: var(--card); 
-            color: var(--text); font-size: 1rem; 
-        }
-
+        input, select, .main-btn { margin: 10px 0; padding: 12px; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; background: var(--card); color: var(--text); font-size: 1rem; }
         .main-btn { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
         .hidden { display: none; }
-        #feedback { text-align: center; font-weight: bold; font-size: 1.2rem; min-height: 1.5em; margin: 10px 0; }
-
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-        .wrong-anim { animation: shake 0.4s ease; border: 2px solid var(--error) !important; }
+        #feedback { text-align: center; font-weight: bold; min-height: 1.5em; }
     </style>
 </head>
 <body onload="loadFromStorage()">
@@ -55,21 +26,18 @@
     <div class="top-bar">
         <button onclick="toggleDark()">🌓 Dark Mode</button>
         <button onclick="exportList()">💾 Export</button>
-        <!-- Import Button hinzugefügt -->
         <button onclick="document.getElementById('importFile').click()">📂 Import</button>
         <button onclick="clearList()" style="background: var(--error)">🗑️ Löschen</button>
         <input type="file" id="importFile" class="hidden" onchange="importList(this)" accept=".json">
     </div>
 
     <div id="inputArea">
-        <h2 style="text-align: center;">Vokabeln verwalten</h2>
+        <h2>Vokabeln verwalten</h2>
         <input type="text" id="foreign" placeholder="Fremdsprache">
         <input type="text" id="german" placeholder="Deutsch">
         <button class="main-btn" onclick="addWord()">Hinzufügen</button>
-        <p style="text-align: center;">Wörter in Liste: <b id="wordCount">0</b></p>
-        
+        <p style="text-align: center;">Wörter: <b id="wordCount">0</b></p>
         <hr>
-        <!-- Modus Auswahl hinzugefügt -->
         <label>Abfrage-Modus:</label>
         <select id="mode">
             <option value="foreign">Fremdsprache abfragen</option>
@@ -80,18 +48,16 @@
     </div>
 
     <div id="trainingArea" class="hidden">
-        <div style="text-align:center; font-weight: bold; color: var(--accent);">Vokabel <span id="progress">0</span></div>
-        <h1 id="qWord" style="text-align: center; margin: 20px 0;">---</h1>
+        <h1 id="qWord" style="text-align: center;">---</h1>
         <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
         <button class="main-btn" onclick="check()">Überprüfen</button>
         <p id="feedback"></p>
-        <button class="main-btn" style="background: #65676b" onclick="stopTraining()">Abbrechen</button>
     </div>
 
     <div id="resultArea" class="hidden">
         <h2 style="text-align: center;">Ergebnis</h2>
-        <div id="statsDetails" style="text-align: center; font-size: 1.5rem; margin: 20px 0;"></div>
-        <button class="main-btn" onclick="location.reload()">Zurück zum Start</button>
+        <div id="statsDetails" style="text-align: center; font-size: 1.5rem;"></div>
+        <button class="main-btn" onclick="location.reload()">Neustart</button>
     </div>
 </div>
 
@@ -101,124 +67,67 @@
     function toggleDark() { document.body.classList.toggle('dark'); }
 
     function saveToStorage() {
-        localStorage.setItem('vocab_data_v1', JSON.stringify(vocab));
+        localStorage.setItem('vocab_final', JSON.stringify(vocab));
         document.getElementById('wordCount').innerText = vocab.length;
     }
 
     function loadFromStorage() {
-        const stored = localStorage.getItem('vocab_data_v1');
-        if (stored) vocab = JSON.parse(stored);
+        vocab = JSON.parse(localStorage.getItem('vocab_final') || '[]');
         document.getElementById('wordCount').innerText = vocab.length;
     }
 
     function addWord() {
-        const f = document.getElementById('foreign').value.trim();
-        const g = document.getElementById('german').value.trim();
-        if(f && g) {
-            vocab.push({f, g});
-            saveToStorage();
-            document.getElementById('foreign').value = '';
-            document.getElementById('german').value = '';
-            document.getElementById('foreign').focus();
-        }
+        const f = document.getElementById('foreign').value.trim(), g = document.getElementById('german').value.trim();
+        if(f && g) { vocab.push({f, g}); saveToStorage(); document.getElementById('foreign').value = ''; document.getElementById('german').value = ''; }
     }
 
     function startTraining() {
-        if(vocab.length === 0) return alert("Die Liste ist leer!");
+        if(vocab.length === 0) return;
         session = [...vocab].sort(() => Math.random() - 0.5);
-        currentIdx = 0;
-        correctInSession = 0;
-        show('trainingArea');
-        next();
+        currentIdx = 0; correctInSession = 0;
+        show('trainingArea'); next();
     }
 
     function next() {
-        if(currentIdx >= session.length) {
-            show('resultArea');
-            document.getElementById('statsDetails').innerText = `${correctInSession} von ${session.length} richtig!`;
-            return;
-        }
-        
-        const word = session[currentIdx];
-        const mode = document.getElementById('mode').value;
+        if(currentIdx >= session.length) { show('resultArea'); document.getElementById('statsDetails').innerText = `${correctInSession} / ${session.length} richtig!`; return; }
+        const word = session[currentIdx], mode = document.getElementById('mode').value;
         let askForeign = mode === 'foreign' || (mode === 'mixed' && Math.random() > 0.5);
-        
-        // Logik: Was wird angezeigt (q) und was ist die Lösung (a)
-        task = {
-            q: askForeign ? word.g : word.f,
-            a: askForeign ? word.f : word.g
-        };
-
-        document.getElementById('progress').innerText = `${currentIdx + 1} / ${session.length}`;
+        task = { q: askForeign ? word.g : word.f, a: askForeign ? word.f : word.g };
         document.getElementById('qWord').innerText = task.q;
-        const inp = document.getElementById('ansInput');
-        inp.value = ''; inp.className = '';
-        document.getElementById('feedback').innerText = '';
-        inp.focus();
+        document.getElementById('ansInput').value = ''; document.getElementById('feedback').innerText = '';
+        document.getElementById('ansInput').focus();
     }
 
     function check() {
         const inp = document.getElementById('ansInput');
-        const fb = document.getElementById('feedback');
-        
         if(inp.value.trim().toLowerCase() === task.a.toLowerCase()) {
-            document.body.classList.add('correct-flash');
-            fb.innerText = "Richtig! ✔";
-            fb.style.color = "var(--success)";
+            document.body.classList.add('correct-flash'); // BLITZ AN
             correctInSession++;
-            
             setTimeout(() => {
-                document.body.classList.remove('correct-flash');
-                currentIdx++;
-                next();
-            }, 700);
+                document.body.classList.remove('correct-flash'); // BLITZ AUS
+                currentIdx++; next();
+            }, 600);
         } else {
-            inp.classList.add('wrong-anim');
-            fb.innerText = `Falsch! Richtig: ${task.a}`;
-            fb.style.color = "var(--error)";
-            // Nach kurzem Fehler-Shake Feld leeren für neuen Versuch oder Weitermachen
-            setTimeout(() => { inp.classList.remove('wrong-anim'); }, 400);
+            document.getElementById('feedback').innerText = `Falsch! Lösung: ${task.a}`;
+            document.getElementById('feedback').style.color = "var(--error)";
         }
     }
 
     function exportList() {
-        const blob = new Blob([JSON.stringify(vocab)], {type: "application/json"});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "meine_vokabeln.json";
-        a.click();
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(vocab)], {type: "application/json"}));
+        a.download = "vokabeln.json"; a.click();
     }
 
-    function importList(inputElement) {
-        const file = inputElement.files[0];
-        if (!file) return;
+    function importList(el) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                vocab = JSON.parse(e.target.result);
-                saveToStorage();
-                alert("Erfolgreich importiert!");
-            } catch(err) { alert("Datei fehlerhaft!"); }
-        };
-        reader.readAsText(file);
+        reader.onload = e => { vocab = JSON.parse(e.target.result); saveToStorage(); location.reload(); };
+        reader.readAsText(el.files[0]);
     }
 
-    function clearList() {
-        if(confirm("Wirklich alle Vokabeln löschen?")) { vocab = []; saveToStorage(); }
-    }
-
-    function stopTraining() { show('inputArea'); }
-
-    function show(id) {
-        ['inputArea', 'trainingArea', 'resultArea'].forEach(area => {
-            document.getElementById(area).classList.toggle('hidden', area !== id);
-        });
-    }
-
-    document.getElementById("ansInput").addEventListener("keypress", (e) => {
-        if (e.key === "Enter") check();
-    });
+    function clearList() { if(confirm("Löschen?")) { vocab = []; saveToStorage(); } }
+    function show(id) { ['inputArea', 'trainingArea', 'resultArea'].forEach(a => document.getElementById(a).classList.toggle('hidden', a !== id)); }
+    document.getElementById("ansInput").addEventListener("keypress", (e) => e.key === "Enter" && check());
 </script>
-
 </body>
 </html>
