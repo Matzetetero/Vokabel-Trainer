@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Pro Edition</title>
+    <title>Vokabeltrainer - Pro</title>
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
@@ -15,11 +15,11 @@
             flex-direction: column; 
             align-items: center; 
             padding: 20px; 
-            transition: background 0.4s ease; /* Der Blitz-Effekt */
+            transition: background 0.4s ease; 
             margin: 0; 
         }
 
-        /* Effekt bei richtiger Antwort */
+        /* Der grüne Blitz-Effekt */
         body.correct-flash { background-color: var(--success) !important; }
 
         .container { 
@@ -43,12 +43,10 @@
 
         .main-btn { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
         .hidden { display: none; }
-        #feedback { text-align: center; font-weight: bold; font-size: 1.2rem; min-height: 1.5em; }
+        #feedback { text-align: center; font-weight: bold; font-size: 1.2rem; min-height: 1.5em; margin: 10px 0; }
 
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
         .wrong-anim { animation: shake 0.4s ease; border: 2px solid var(--error) !important; }
-        
-        .list-preview { margin-top: 15px; max-height: 100px; overflow-y: auto; font-size: 0.85rem; border-top: 1px solid #ddd; padding-top: 10px; }
     </style>
 </head>
 <body onload="loadFromStorage()">
@@ -57,41 +55,43 @@
     <div class="top-bar">
         <button onclick="toggleDark()">🌓 Dark Mode</button>
         <button onclick="exportList()">💾 Export</button>
+        <!-- Import Button hinzugefügt -->
         <button onclick="document.getElementById('importFile').click()">📂 Import</button>
         <button onclick="clearList()" style="background: var(--error)">🗑️ Löschen</button>
         <input type="file" id="importFile" class="hidden" onchange="importList(this)" accept=".json">
     </div>
 
     <div id="inputArea">
-        <h2>Vokabeln verwalten</h2>
+        <h2 style="text-align: center;">Vokabeln verwalten</h2>
         <input type="text" id="foreign" placeholder="Fremdsprache">
         <input type="text" id="german" placeholder="Deutsch">
         <button class="main-btn" onclick="addWord()">Hinzufügen</button>
-        <p style="text-align: center;">Wörter: <b id="wordCount">0</b></p>
-        <div id="preview" class="list-preview"></div>
+        <p style="text-align: center;">Wörter in Liste: <b id="wordCount">0</b></p>
+        
         <hr>
+        <!-- Modus Auswahl hinzugefügt -->
         <label>Abfrage-Modus:</label>
         <select id="mode">
-            <option value="de">Deutsch abfragen</option>
             <option value="foreign">Fremdsprache abfragen</option>
+            <option value="de">Deutsch abfragen</option>
             <option value="mixed">Zufällig gemischt</option>
         </select>
         <button class="main-btn" style="background: var(--success)" onclick="startTraining()">Training starten</button>
     </div>
 
     <div id="trainingArea" class="hidden">
-        <div style="text-align:center; margin-bottom:10px;">Fortschritt: <span id="progress">0</span></div>
-        <h1 id="qWord" style="text-align: center;">---</h1>
+        <div style="text-align:center; font-weight: bold; color: var(--accent);">Vokabel <span id="progress">0</span></div>
+        <h1 id="qWord" style="text-align: center; margin: 20px 0;">---</h1>
         <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
         <button class="main-btn" onclick="check()">Überprüfen</button>
-        <button class="main-btn" style="background: #65676b" onclick="next(true)">Überspringen</button>
         <p id="feedback"></p>
+        <button class="main-btn" style="background: #65676b" onclick="stopTraining()">Abbrechen</button>
     </div>
 
     <div id="resultArea" class="hidden">
         <h2 style="text-align: center;">Ergebnis</h2>
-        <div id="statsDetails" style="text-align: center; font-size: 1.5rem; margin-bottom: 20px;"></div>
-        <button class="main-btn" onclick="location.reload()">Neustart</button>
+        <div id="statsDetails" style="text-align: center; font-size: 1.5rem; margin: 20px 0;"></div>
+        <button class="main-btn" onclick="location.reload()">Zurück zum Start</button>
     </div>
 </div>
 
@@ -100,31 +100,22 @@
 
     function toggleDark() { document.body.classList.toggle('dark'); }
 
-    // Automatisches Speichern
     function saveToStorage() {
-        localStorage.setItem('vocab_v5_data', JSON.stringify(vocab));
-        updateUI();
+        localStorage.setItem('vocab_data_v1', JSON.stringify(vocab));
+        document.getElementById('wordCount').innerText = vocab.length;
     }
 
     function loadFromStorage() {
-        const stored = localStorage.getItem('vocab_v5_data');
+        const stored = localStorage.getItem('vocab_data_v1');
         if (stored) vocab = JSON.parse(stored);
-        updateUI();
-    }
-
-    function updateUI() {
         document.getElementById('wordCount').innerText = vocab.length;
-        const preview = document.getElementById('preview');
-        preview.innerHTML = vocab.length > 0 ? 
-            "<b>Zuletzt hinzugefügt:</b><br>" + vocab.slice(-3).map(v => `${v.f} = ${v.g}`).join('<br>') : 
-            "Keine Wörter vorhanden.";
     }
 
     function addWord() {
         const f = document.getElementById('foreign').value.trim();
         const g = document.getElementById('german').value.trim();
         if(f && g) {
-            vocab.push({f, g, id: Date.now()});
+            vocab.push({f, g});
             saveToStorage();
             document.getElementById('foreign').value = '';
             document.getElementById('german').value = '';
@@ -133,7 +124,7 @@
     }
 
     function startTraining() {
-        if(vocab.length === 0) return alert("Füge erst Vokabeln hinzu!");
+        if(vocab.length === 0) return alert("Die Liste ist leer!");
         session = [...vocab].sort(() => Math.random() - 0.5);
         currentIdx = 0;
         correctInSession = 0;
@@ -141,19 +132,18 @@
         next();
     }
 
-    function next(skipped = false) {
-        if (skipped) currentIdx++;
+    function next() {
         if(currentIdx >= session.length) {
             show('resultArea');
-            document.getElementById('statsDetails').innerText = `Fertig! ${correctInSession} von ${session.length} richtig.`;
+            document.getElementById('statsDetails').innerText = `${correctInSession} von ${session.length} richtig!`;
             return;
         }
         
         const word = session[currentIdx];
         const mode = document.getElementById('mode').value;
-        // Bestimmen, was gefragt wird
         let askForeign = mode === 'foreign' || (mode === 'mixed' && Math.random() > 0.5);
         
+        // Logik: Was wird angezeigt (q) und was ist die Lösung (a)
         task = {
             q: askForeign ? word.g : word.f,
             a: askForeign ? word.f : word.g
@@ -172,9 +162,8 @@
         const fb = document.getElementById('feedback');
         
         if(inp.value.trim().toLowerCase() === task.a.toLowerCase()) {
-            // GRÜNER BLITZ EFFEKT
             document.body.classList.add('correct-flash');
-            fb.innerText = "Richtig! ✨";
+            fb.innerText = "Richtig! ✔";
             fb.style.color = "var(--success)";
             correctInSession++;
             
@@ -185,8 +174,10 @@
             }, 700);
         } else {
             inp.classList.add('wrong-anim');
-            fb.innerText = `Falsch! Lösung: ${task.a}`;
+            fb.innerText = `Falsch! Richtig: ${task.a}`;
             fb.style.color = "var(--error)";
+            // Nach kurzem Fehler-Shake Feld leeren für neuen Versuch oder Weitermachen
+            setTimeout(() => { inp.classList.remove('wrong-anim'); }, 400);
         }
     }
 
@@ -194,7 +185,7 @@
         const blob = new Blob([JSON.stringify(vocab)], {type: "application/json"});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = "vokabeln.json";
+        a.download = "meine_vokabeln.json";
         a.click();
     }
 
@@ -206,19 +197,21 @@
             try {
                 vocab = JSON.parse(e.target.result);
                 saveToStorage();
-                alert("Import erfolgreich!");
-            } catch(err) { alert("Fehler beim Import!"); }
+                alert("Erfolgreich importiert!");
+            } catch(err) { alert("Datei fehlerhaft!"); }
         };
         reader.readAsText(file);
     }
 
     function clearList() {
-        if(confirm("Wirklich ALLES löschen?")) { vocab = []; saveToStorage(); }
+        if(confirm("Wirklich alle Vokabeln löschen?")) { vocab = []; saveToStorage(); }
     }
 
+    function stopTraining() { show('inputArea'); }
+
     function show(id) {
-        ['inputArea', 'trainingArea', 'resultArea'].forEach(a => {
-            document.getElementById(a).classList.toggle('hidden', a !== id);
+        ['inputArea', 'trainingArea', 'resultArea'].forEach(area => {
+            document.getElementById(area).classList.toggle('hidden', area !== id);
         });
     }
 
