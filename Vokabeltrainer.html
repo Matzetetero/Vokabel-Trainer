@@ -159,6 +159,8 @@
     }
 
     function importData(e) {
+        const file = e.target.files[0]; // FIXED: Greift auf die erste Datei zu
+        if(!file) return;
         const reader = new FileReader();
         reader.onload = (ev) => {
             list = JSON.parse(ev.target.result);
@@ -166,7 +168,7 @@
             document.getElementById('cnt').innerText = list.length;
             alert("Erfolgreich geladen!");
         };
-        reader.readAsText(e.target.files[0]); // FIXED: Greift auf die erste Datei zu
+        reader.readAsText(file); 
     }
 
     function resetData() { if(confirm("Alles löschen?")) { list = []; localStorage.clear(); location.reload(); } }
