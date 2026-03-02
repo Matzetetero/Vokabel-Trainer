@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Mein Vokabeltrainer</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f4f4f9; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        input, select, button { margin: 10px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        button { cursor: pointer; background: #007bff; color: white; border: none; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        #trainingArea, #result { display: none; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="inputArea">
+    <h2>Vokabeln eingeben</h2>
+    <input type="text" id="foreignInput" placeholder="Fremdsprache (z.B. Hello)">
+    <input type="text" id="germanInput" placeholder="Deutsch (z.B. Hallo)">
+    <button onclick="addWord()">Hinzufügen</button>
+    <p>Gespeicherte Vokabeln: <span id="wordCount">0</span></p>
+    <hr>
+    <h3>Modus wählen</h3>
+    <select id="mode">
+        <option value="de">Deutsch abfragen</option>
+        <option value="foreign">Fremdsprache abfragen</option>
+        <option value="mixed">Gemischt</option>
+    </select>
+    <button onclick="startTraining()" style="background: #28a745;">Trainieren starten</button>
+</div>
+
+<div class="container" id="trainingArea">
+    <h2 id="questionLabelText">Was heißt...</h2>
+    <h1 id="questionWord">---</h1>
+    <input type="text" id="answerInput" placeholder="Deine Antwort...">
+    <button onclick="checkAnswer()">Überprüfen</button>
+    <button onclick="skipWord()" style="background: #6c757d;">Ich weiß es nicht</button>
+    <p id="feedback"></p>
+</div>
+
+<div class="container" id="resultArea" style="display:none;">
+    <h2>Fertig!</h2>
+    <p id="stats"></p>
+    <button onclick="restart()">Zurück zum Start</button>
+</div>
+
+<script>
+    let vocabulary = []; // {foreign, german}
+    let sessionWords = []; 
+    let wrongWords = [];
+    let currentIndex = 0;
+    let currentTask = {}; // {word, targetLang, targetValue}
+
+    function addWord() {
+        const foreign = document.getElementById('foreignInput').value.trim();
+        const german = document.getElementById('germanInput').value.trim();
+        if (foreign && german) {
+            vocabulary.push({ foreign, german });
+            document.getElementById('wordCount').innerText = vocabulary.length;
+            document.getElementById('foreignInput').value = '';
+            document.getElementById('germanInput').value = '';
+            document.getElementById('foreignInput').focus();
+        }
+    }
+
+    function startTraining() {
+        if (vocabulary.length === 0) return alert("Bitte erst Vokabeln eingeben!");
+        sessionWords = [...vocabulary].sort(() => Math.random() - 0.5);
+        wrongWords = [];
+        currentIndex = 0;
+        showView('training');
+        nextQuestion();
+    }
+
+    function nextQuestion() {
+        if (currentIndex >= sessionWords.length) {
+            if (wrongWords.length > 0) {
+                alert("Runde beendet. Jetzt werden die Fehler wiederholt!");
+                sessionWords = [...wrongWords].sort(() => Math.random() - 0.5);
+                wrongWords = [];
+                currentIndex = 0;
+            } else {
+                return showResult();
+            }
+        }
+
+        const word = sessionWords[currentIndex];
+        const mode = document.getElementById('mode').value;
+        let askForeign = mode === 'foreign';
+        if (mode === 'mixed') askForeign = Math.random() > 0.5;
+
+        currentTask = {
+            display: askForeign ? word.german : word.foreign,
+            correct: askForeign ? word.foreign : word.german
+        };
+
+        document.getElementById('questionWord').innerText = currentTask.display;
+        document.getElementById('answerInput').value = '';
+        document.getElementById('feedback').innerText = '';
+        document.getElementById('answerInput').focus();
+    }
+
+    function checkAnswer() {
+        const userAns = document.getElementById('answerInput').value.trim().toLowerCase();
+        const correctAns = currentTask.correct.toLowerCase();
+
+        if (userAns === correctAns) {
+            document.getElementById('feedback').innerHTML = "✅ Richtig!";
+            currentIndex++;
+            setTimeout(nextQuestion, 1000);
+        } else {
+            document.getElementById('feedback').innerHTML = `❌ Falsch! Richtig wäre: <b>${currentTask.correct}</b>`;
+            if (!wrongWords.includes(sessionWords[currentIndex])) {
+                wrongWords.push(sessionWords[currentIndex]);
+            }
+            currentIndex++;
+            setTimeout(nextQuestion, 2000);
+        }
+    }
+
+    function skipWord() {
+        document.getElementById('feedback').innerHTML = `Lösung: <b>${currentTask.correct}</b>`;
+        if (!wrongWords.includes(sessionWords[currentIndex])) {
+            wrongWords.push(sessionWords[currentIndex]);
+        }
+        currentIndex++;
+        setTimeout(nextQuestion, 2000);
+    }
+
+    function showView(view) {
+        document.getElementById('inputArea').style.display = view === 'input' ? 'block' : 'none';
+        document.getElementById('trainingArea').style.display = view === 'training' ? 'block' : 'none';
+        document.getElementById('resultArea').style.display = view === 'result' ? 'block' : 'none';
+    }
+
+    function showResult() {
+        showView('result');
+        document.getElementById('stats').innerText = "Du hast alle Vokabeln erfolgreich gelernt!";
+    }
+
+    function restart() {
+        showView('input');
+    }
+</script>
+</body>
+</html>
