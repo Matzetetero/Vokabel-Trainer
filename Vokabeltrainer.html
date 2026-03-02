@@ -2,176 +2,140 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Cinematic Edition</title>
+    <title>Vokabeltrainer - Flash Edition</title>
     <style>
-        :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
-        body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
+        :root { --bg: #f0f2f5; --card: white; --text: #1c1e21; --accent: #007bff; --success: #28a745; }
+        body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; }
         
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: background 0.5s ease; margin: 0; min-height: 100vh; overflow: hidden; }
-        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 500px; position: relative; z-index: 10; margin-top: 50px; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: background 0.2s; margin: 0; min-height: 100vh; overflow: hidden; }
+        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 400px; z-index: 10; margin-top: 50px; text-align: center; }
         
-        /* BLITZ EFFEKT KLASSE */
-        body.flash-success { background: #d4edda !important; }
-        body.dark.flash-success { background: #1b4332 !important; }
+        /* DER SUPER-BLITZ */
+        .flash-active { background: #28a745 !important; transition: 0.1s; }
 
-        .top-bar { display: flex; gap: 8px; margin-bottom: 20px; }
-        .top-bar button { flex: 1; padding: 10px; cursor: pointer; border-radius: 6px; border: none; background: #65676b; color: white; font-size: 0.8rem; }
-        .btn-accent { background: var(--accent) !important; }
-        input, select, .main-btn { margin: 10px 0; padding: 12px; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; background: var(--card); color: var(--text); font-size: 1rem; }
-        .main-btn { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
+        /* RIESEN-EMOJI ANIMATION */
+        #superEmoji {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            font-size: 150px; pointer-events: none; z-index: 1000; opacity: 0;
+        }
+        .emoji-pop { animation: pop 2s forwards; }
+        @keyframes pop {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+            80% { transform: translate(-50%, -100%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -200%) scale(0.5); opacity: 0; }
+        }
+
+        input, button { margin: 10px 0; padding: 12px; width: 100%; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
+        button { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
         .hidden { display: none; }
-
-        /* JUMP ANIMATION */
-        @keyframes jump { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px) scale(1.1); } }
-        .correct-anim { animation: jump 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 4px solid var(--success) !important; }
-
-        /* KINO-KONFETTI */
-        .confetti {
-            position: fixed;
-            z-index: 1000;
-            font-size: 2.8rem;
-            pointer-events: none;
-            user-select: none;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.2));
-        }
-
-        @keyframes cinematicFall {
-            0% { transform: translate(0, 0) scale(0) rotate(0deg); opacity: 1; }
-            15% { transform: translate(var(--ld), -250px) scale(1.2) rotate(180deg); opacity: 1; } /* Starker Schuss hoch */
-            100% { transform: translate(var(--rd), 110vh) scale(0.8) rotate(1080deg); opacity: 0; } /* Langsames Schweben runter */
-        }
+        
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .correct-field { animation: bounce 0.5s ease; border: 3px solid #28a745 !important; }
     </style>
 </head>
-<body onload="loadFromStorage()">
+<body onload="load()">
+
+<div id="superEmoji">🎉</div>
 
 <div class="container">
-    <div class="top-bar">
-        <button class="btn-accent" onclick="toggleDark()">🌓 Mode</button>
-        <button onclick="exportList()">💾 Export</button>
-        <button onclick="document.getElementById('importFile').click()">📂 Import</button>
-        <button onclick="clearList()" style="background: var(--error)">🗑️ Reset</button>
-        <input type="file" id="importFile" class="hidden" onchange="importList(this)" accept=".json">
-    </div>
-
     <div id="inputArea">
-        <h2>Vokabel-Zentrale</h2>
-        <input type="text" id="foreign" placeholder="Fremdsprache">
-        <input type="text" id="german" placeholder="Deutsch">
-        <button class="main-btn" onclick="addWord()">Hinzufügen</button>
-        <p style="text-align: center;">Vokabeln im Speicher: <b id="wordCount">0</b></p>
+        <h2>Vokabeln</h2>
+        <input type="text" id="f" placeholder="Fremdsprache">
+        <input type="text" id="g" placeholder="Deutsch">
+        <button onclick="add()">Hinzufügen</button>
+        <p>Anzahl: <b id="count">0</b></p>
         <hr>
-        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">FILM AB! (Start)</button>
+        <button style="background: #28a745" onclick="start()">START</button>
     </div>
 
     <div id="trainingArea" class="hidden">
-        <div style="text-align: center; color: var(--accent); font-weight: bold; margin-bottom: 10px;">
-            Erfolg: <span id="correctNum">0</span> von <span id="processedNum">0</span>
-        </div>
-        <h1 id="qWord" style="text-align: center; font-size: 2.5rem;">---</h1>
-        <input type="text" id="ansInput" placeholder="Deine Lösung..." autocomplete="off">
-        <button class="main-btn" onclick="check()">Überprüfen</button>
-        <p id="feedback" style="text-align:center; font-weight:bold; min-height:40px; font-size: 1.8rem;"></p>
+        <p>Richtig: <span id="cNum">0</span> / <span id="pNum">0</span></p>
+        <h1 id="q">---</h1>
+        <input type="text" id="ans" placeholder="Antwort..." autocomplete="off">
+        <button onclick="check()">Überprüfen</button>
+        <p id="feed"></p>
     </div>
 
     <div id="resultArea" class="hidden">
-        <h2 style="text-align: center;">👑 Meisterleistung!</h2>
-        <div id="statsDetails"></div>
-        <button class="main-btn" onclick="location.reload()">Zurück zum Start</button>
+        <h2>Fertig!</h2>
+        <div id="res"></div>
+        <button onclick="location.reload()">Neustart</button>
     </div>
 </div>
 
 <script>
-    let vocab = [], session = [], wrongs = [], attempts = {}, currentIdx = 0, correctInSession = 0, task = {};
+    let v = [], s = [], wr = [], att = {}, cur = 0, ok = 0, task = {};
 
-    function toggleDark() { document.body.classList.toggle('dark'); }
-    function saveToStorage() { localStorage.setItem('vok_v_cinematic', JSON.stringify(vocab)); document.getElementById('wordCount').innerText = vocab.length; }
-    function loadFromStorage() { const d = localStorage.getItem('vok_v_cinematic'); if(d){ vocab = JSON.parse(d); document.getElementById('wordCount').innerText = vocab.length; } }
-    function addWord() { const f = document.getElementById('foreign').value, g = document.getElementById('german').value; if(f&&g){ vocab.push({f,g,id:Date.now()}); saveToStorage(); document.getElementById('foreign').value=''; document.getElementById('german').value=''; document.getElementById('foreign').focus(); } }
-    function exportList() { const b = new Blob([JSON.stringify(vocab)], {type:"application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = "vokabel-kino.json"; a.click(); }
-    function importList(i) { const r = new FileReader(); r.onload = (e) => { vocab = JSON.parse(e.target.result); saveToStorage(); alert("Geladen!"); }; r.readAsText(i.files[0]); }
-    function clearList() { if(confirm("Alles löschen?")) { vocab = []; saveToStorage(); } }
+    function load() { 
+        let d = localStorage.getItem('vok_v_final'); 
+        if(d) { v = JSON.parse(d); document.getElementById('count').innerText = v.length; }
+    }
 
-    function startTraining() {
-        if(vocab.length === 0) return;
-        session = [...vocab].sort(() => Math.random() - 0.5);
-        wrongs = []; currentIdx = 0; correctInSession = 0; attempts = {};
-        vocab.forEach(v => attempts[v.id] = 1);
-        show('trainingArea');
+    function add() {
+        let f = document.getElementById('f').value, g = document.getElementById('g').value;
+        if(f && g) { v.push({f,g,id:Date.now()}); localStorage.setItem('vok_v_final', JSON.stringify(v)); document.getElementById('count').innerText = v.length; document.getElementById('f').value=''; document.getElementById('g').value=''; document.getElementById('f').focus(); }
+    }
+
+    function start() {
+        if(v.length === 0) return;
+        s = [...v].sort(() => Math.random() - 0.5);
+        wr = []; cur = 0; ok = 0; att = {}; v.forEach(x => att[x.id] = 1);
+        document.getElementById('inputArea').classList.add('hidden');
+        document.getElementById('trainingArea').classList.remove('hidden');
         next();
     }
 
     function next() {
-        if(currentIdx >= session.length) {
-            if(wrongs.length > 0) { session = [...wrongs].sort(() => Math.random()-0.5); wrongs = []; currentIdx = 0; next(); }
-            else { show('resultArea'); renderStats(); return; }
+        if(cur >= s.length) {
+            if(wr.length > 0) { s = [...wr].sort(()=>Math.random()-0.5); wr = []; cur = 0; next(); }
+            else { 
+                document.getElementById('trainingArea').classList.add('hidden');
+                document.getElementById('resultArea').classList.remove('hidden');
+                render(); return; 
+            }
         }
-        document.getElementById('correctNum').innerText = correctInSession;
-        document.getElementById('processedNum').innerText = currentIdx + 1;
-        let word = session[currentIdx];
-        task = { q: word.f, a: word.g, id: word.id };
-        document.getElementById('qWord').innerText = task.q;
-        const inp = document.getElementById('ansInput');
-        inp.value = ''; inp.className = ''; document.getElementById('feedback').innerText = '';
-        inp.focus();
+        document.getElementById('cNum').innerText = ok;
+        document.getElementById('pNum').innerText = cur + 1;
+        task = { q: s[cur].f, a: s[cur].g, id: s[cur].id };
+        document.getElementById('q').innerText = task.q;
+        document.getElementById('ans').value = '';
+        document.getElementById('ans').className = '';
+        document.getElementById('feed').innerText = '';
+        document.getElementById('ans').focus();
     }
 
     function check() {
-        const inp = document.getElementById('ansInput');
-        if(inp.value.trim().toLowerCase() === task.a.toLowerCase()) {
-            if(!wrongs.includes(session[currentIdx])) correctInSession++;
-            document.getElementById('feedback').innerText = "🏆 PERFEKT! 🏆";
-            inp.classList.add('correct-anim');
+        let i = document.getElementById('ans');
+        if(i.value.trim().toLowerCase() === task.a.toLowerCase()) {
+            if(!wr.includes(s[cur])) ok++;
             
-            // BLITZ UND EXPLOSION
-            document.body.classList.add('flash-success');
-            setTimeout(() => document.body.classList.remove('flash-success'), 600);
+            // --- DIE SUPER ANIMATION ---
+            document.body.classList.add('flash-active');
+            let e = document.getElementById('superEmoji');
+            e.innerText = ['🎉','⭐','🏆','🔥','✨'][Math.floor(Math.random()*5)];
+            e.classList.remove('emoji-pop');
+            void e.offsetWidth; // Trick zum Neustart der Animation
+            e.classList.add('emoji-pop');
+            i.classList.add('correct-field');
             
-            triggerMegaExplosion();
-            currentIdx++; 
-            setTimeout(next, 1500); // Kurz warten für den Effekt
+            setTimeout(() => document.body.classList.remove('flash-active'), 200);
+            cur++; setTimeout(next, 1500);
         } else {
-            document.getElementById('feedback').innerText = "💡 Lösung: " + task.a;
-            if(!wrongs.includes(session[currentIdx])) { wrongs.push(session[currentIdx]); attempts[task.id]++; }
-            currentIdx++; 
-            setTimeout(next, 2500);
+            document.getElementById('feed').innerText = "Falsch! Lösung: " + task.a;
+            if(!wr.includes(s[cur])) { wr.push(s[cur]); att[task.id]++; }
+            cur++; setTimeout(next, 2500);
         }
     }
 
-    function triggerMegaExplosion() {
-        const emojis = ['🎉','✨','⭐','🌟','🌈','🔥','🎈','🏆','🍬','💎','⚡','🔥','🦄','🏅'];
-        for(let i=0; i<40; i++) {
-            const conf = document.createElement('div');
-            conf.className = 'confetti';
-            conf.innerText = emojis[Math.floor(Math.random()*emojis.length)];
-            
-            // Startposition: Mittig über dem Eingabefeld
-            conf.style.left = '50vw';
-            conf.style.top = '60vh';
-            
-            // Zufällige Flugweiten für CSS-Variablen (Großer Radius)
-            conf.style.setProperty('--ld', (Math.random() * 1000 - 500) + "px"); // Massiver Schuss zur Seite
-            conf.style.setProperty('--rd', (Math.random() * 1200 - 600) + "px"); // Weites Fallen
-            
-            // 5 Sekunden Dauer, langsames Ende
-            conf.style.animation = `cinematicFall 5s forwards cubic-bezier(0.1, 0.7, 0.1, 1)`;
-            
-            document.body.appendChild(conf);
-            setTimeout(() => conf.remove(), 5000); // Bleibt 5 Sek im DOM
-        }
+    function render() {
+        let h = "<ul>", sum = {};
+        Object.values(att).forEach(x => sum[x] = (sum[x] || 0) + 1);
+        for(let k in sum) h += `<li><b>${sum[k]} Wörter</b> im ${k}. Versuch</li>`;
+        document.getElementById('res').innerHTML = h + "</ul>";
     }
 
-    function renderStats() {
-        let h = "<ul>", s = {};
-        Object.values(attempts).forEach(a => s[a] = (s[a] || 0) + 1);
-        for(let a in s) h += `<li><b>${s[a]} Wörter</b> im ${a}. Versuch gelöst</li>`;
-        document.getElementById('statsDetails').innerHTML = h + "</ul>";
-    }
-
-    function show(id) {
-        ['inputArea', 'trainingArea', 'resultArea'].forEach(i => document.getElementById(i).classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-    }
-    document.getElementById('ansInput').onkeypress = (e) => { if(e.key === 'Enter') check(); };
+    document.getElementById('ans').onkeypress = (e) => { if(e.key === 'Enter') check(); };
 </script>
 </body>
 </html>
