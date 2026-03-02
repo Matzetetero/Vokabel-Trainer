@@ -2,25 +2,54 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Final Fix</title>
+    <title>Vokabeltrainer - Super Animation Edition</title>
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 0.3s; }
-        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 500px; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 0.3s; overflow: hidden; }
+        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 500px; position: relative; z-index: 10; }
         .top-bar { display: flex; gap: 8px; margin-bottom: 20px; }
         .top-bar button { flex: 1; padding: 10px; cursor: pointer; border-radius: 6px; border: none; background: #65676b; color: white; font-size: 0.8rem; }
         .btn-accent { background: var(--accent) !important; }
-        input, select, .main-btn { margin: 10px 0; padding: 12px; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; background: var(--card); color: var(--text); font-size: 1rem; }
+        input, select, .main-btn { margin: 10px 0; padding: 12px; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; background: var(--card); color: var(--text); font-size: 1rem; transition: 0.2s; }
         .main-btn { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
         .stats-live { font-size: 1.1rem; font-weight: bold; text-align: center; margin-bottom: 15px; color: var(--accent); }
-        #feedback { min-height: 30px; margin: 15px 0; font-weight: bold; text-align: center; font-size: 1.2rem; }
+        #feedback { min-height: 35px; margin: 15px 0; font-weight: bold; text-align: center; font-size: 1.4rem; transition: 0.3s; }
         .hidden { display: none; }
-        .list-preview { margin-top: 20px; max-height: 150px; overflow-y: auto; font-size: 0.8rem; border-top: 1px solid #ccc; padding-top: 10px; }
-        @keyframes successPop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        .correct-anim { animation: successPop 0.4s ease; border: 2px solid var(--success) !important; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-        .wrong-anim { animation: shake 0.4s ease; border: 2px solid var(--error) !important; }
+        
+        /* SUPER ANIMATIONEN */
+        @keyframes successJump {
+            0% { transform: translateY(0); }
+            30% { transform: translateY(-15px) scale(1.05); }
+            50% { transform: translateY(0); }
+            70% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+        .correct-anim { 
+            animation: successJump 0.6s ease; 
+            border: 3px solid var(--success) !important; 
+            background-color: rgba(40, 167, 69, 0.1) !important;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .wrong-anim { 
+            animation: shake 0.4s ease; 
+            border: 3px solid var(--error) !important; 
+            background-color: rgba(220, 53, 69, 0.1) !important;
+        }
+
+        /* KONFETTI PARTIKEL */
+        .confetti {
+            position: absolute;
+            font-size: 25px;
+            pointer-events: none;
+            z-index: 100;
+            user-select: none;
+        }
     </style>
 </head>
 <body onload="loadFromStorage()">
@@ -39,32 +68,29 @@
         <input type="text" id="foreign" placeholder="Fremdsprache">
         <input type="text" id="german" placeholder="Deutsch">
         <button class="main-btn" onclick="addWord()">Wort hinzufügen</button>
-        <p style="text-align: center;">Vokabeln in der Liste: <b id="wordCount">0</b></p>
-        
-        <div id="preview" class="list-preview">Keine Wörter vorhanden.</div>
-
+        <p style="text-align: center;">Vokabeln geladen: <b id="wordCount">0</b></p>
         <hr>
         <select id="mode">
             <option value="de">Deutsch abfragen</option>
             <option value="foreign">Fremdsprache abfragen</option>
             <option value="mixed">Zufällig gemischt</option>
         </select>
-        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">Training starten</button>
+        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">🚀 Training starten</button>
     </div>
 
     <div id="trainingArea" class="hidden">
         <div class="stats-live">Richtig: <span id="correctNum">0</span> von <span id="processedNum">0</span></div>
-        <h1 id="qWord" style="text-align: center;">---</h1>
-        <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
+        <h1 id="qWord" style="text-align: center; margin: 10px 0; font-size: 2.2rem;">---</h1>
+        <input type="text" id="ansInput" placeholder="Deine Antwort..." autocomplete="off">
         <button class="main-btn" onclick="check()">Überprüfen</button>
         <button class="main-btn" style="background: #65676b" onclick="skip()">Weiß ich nicht</button>
         <p id="feedback"></p>
     </div>
 
     <div id="resultArea" class="hidden">
-        <h2 style="text-align: center;">Ergebnis</h2>
+        <h2 style="text-align: center;">🎉 Geschafft!</h2>
         <div id="statsDetails"></div>
-        <button class="main-btn" onclick="location.reload()">Neustart</button>
+        <button class="main-btn" onclick="location.reload()">Hauptmenü</button>
     </div>
 </div>
 
@@ -75,30 +101,20 @@
     function toggleDark() { document.body.classList.toggle('dark'); }
 
     function saveToStorage() {
-        localStorage.setItem('vocab_v3', JSON.stringify(vocab));
-        updateUI();
+        localStorage.setItem('vocab_final_v1', JSON.stringify(vocab));
+        document.getElementById('wordCount').innerText = vocab.length;
     }
 
     function loadFromStorage() {
-        const data = localStorage.getItem('vocab_v3');
+        const data = localStorage.getItem('vocab_final_v1');
         if (data) {
             vocab = JSON.parse(data);
-        }
-        updateUI();
-    }
-
-    function updateUI() {
-        document.getElementById('wordCount').innerText = vocab.length;
-        const preview = document.getElementById('preview');
-        if (vocab.length > 0) {
-            preview.innerHTML = "<b>Vorschau:</b><br>" + vocab.slice(-5).map(v => `${v.f} = ${v.g}`).join('<br>');
-        } else {
-            preview.innerHTML = "Keine Wörter vorhanden.";
+            document.getElementById('wordCount').innerText = vocab.length;
         }
     }
 
     function clearList() {
-        if(confirm("Alles löschen?")) { vocab = []; saveToStorage(); }
+        if(confirm("Alle Vokabeln löschen?")) { vocab = []; saveToStorage(); }
     }
 
     function addWord() {
@@ -112,29 +128,22 @@
     }
 
     function exportList() {
-        if(vocab.length === 0) return alert("Liste leer!");
         const blob = new Blob([JSON.stringify(vocab)], {type: "application/json"});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = "vokabeln.json";
-        a.click();
+        a.download = "vokabeln.json"; a.click();
     }
 
-    // DER WICHTIGE FIX: Zugriff auf input.files[0]
     function importList(inputElement) {
         const file = inputElement.files[0]; 
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const imported = JSON.parse(e.target.result);
-                if (Array.isArray(imported)) {
-                    vocab = imported;
-                    saveToStorage();
-                    alert("Erfolg! " + vocab.length + " Wörter geladen.");
-                }
-            } catch (err) { alert("Fehler beim Lesen der Datei!"); }
+                vocab = JSON.parse(e.target.result);
+                saveToStorage();
+                alert("Erfolg! " + vocab.length + " Wörter importiert.");
+            } catch (err) { alert("Fehler!"); }
         };
         reader.readAsText(file);
         inputElement.value = ""; 
@@ -171,19 +180,41 @@
         const inp = document.getElementById('ansInput');
         if(inp.value.trim().toLowerCase() === task.a.toLowerCase()) {
             if(!wrongs.includes(session[currentIdx])) correctInSession++;
-            document.getElementById('feedback').innerText = "✅ Richtig!";
+            document.getElementById('feedback').innerText = "✨ GENIAL! ✨";
             inp.classList.add('correct-anim');
-            currentIdx++; setTimeout(next, 700);
+            shootConfetti(); // DIE SUPER ANIMATION
+            currentIdx++; setTimeout(next, 900);
         } else {
-            document.getElementById('feedback').innerText = "❌ Falsch! Lösung: " + task.a;
+            document.getElementById('feedback').innerText = "💡 Lösung: " + task.a;
             inp.classList.add('wrong-anim');
             if(!wrongs.includes(session[currentIdx])) { wrongs.push(session[currentIdx]); attempts[task.id]++; }
             currentIdx++; setTimeout(next, 2000);
         }
     }
 
+    function shootConfetti() {
+        for(let i=0; i<15; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.innerText = ['🎉','✨','⭐','✅','🌈','🔥'][Math.floor(Math.random()*6)];
+            c.style.left = (Math.random() * 100) + 'vw';
+            c.style.top = '110vh';
+            document.body.appendChild(c);
+            
+            let pos = 0;
+            let drift = (Math.random() - 0.5) * 6;
+            let speed = 4 + Math.random() * 5;
+            let interval = setInterval(() => {
+                pos += speed;
+                c.style.transform = `translateY(-${pos}px) translateX(${Math.sin(pos/30)*20}px) rotate(${pos*2}deg)`;
+                c.style.opacity = 1 - (pos/1000);
+                if(pos > 1000) { clearInterval(interval); c.remove(); }
+            }, 10);
+        }
+    }
+
     function skip() {
-        document.getElementById('feedback').innerText = "Lösung: " + task.a;
+        document.getElementById('feedback').innerText = "💡 Lösung: " + task.a;
         if(!wrongs.includes(session[currentIdx])) { wrongs.push(session[currentIdx]); attempts[task.id]++; }
         currentIdx++; setTimeout(next, 2000);
     }
