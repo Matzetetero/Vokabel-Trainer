@@ -2,25 +2,88 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Mein Vokabeltrainer</title>
+    <title>Vokabeltrainer Pro - Dark Mode</title>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f4f4f9; padding: 20px; }
-        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
-        input, select, button { margin: 10px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
-        button { cursor: pointer; background: #007bff; color: white; border: none; font-weight: bold; }
-        button:hover { background: #0056b3; }
-        #trainingArea, #result { display: none; }
-        .hidden { display: none; }
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #bb86fc;
+            --success-color: #03dac6;
+            --error-color: #cf6679;
+            --button-hover: #3700b3;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            background: var(--bg-color); 
+            color: var(--text-color);
+            padding: 20px; 
+            margin: 0;
+        }
+
+        .container { 
+            background: var(--card-bg); 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); 
+            width: 100%; 
+            max-width: 500px; 
+            text-align: center; 
+            margin-top: 20px;
+        }
+
+        input, select, button { 
+            margin: 10px 0; 
+            padding: 12px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            border: 1px solid #333; 
+            border-radius: 8px; 
+            background: #2c2c2c;
+            color: white;
+            font-size: 1rem;
+        }
+
+        button { 
+            cursor: pointer; 
+            background: var(--accent-color); 
+            color: black; 
+            border: none; 
+            font-weight: bold; 
+            transition: 0.3s;
+        }
+
+        button:hover { background: var(--button-hover); color: white; }
+
+        .stats-header {
+            font-size: 0.9rem;
+            color: var(--success-color);
+            margin-bottom: 10px;
+            text-align: right;
+        }
+
+        #feedback { margin: 15px 0; font-weight: bold; min-height: 1.5em; }
+        .correct { color: var(--success-color); }
+        .wrong { color: var(--error-color); }
+
+        hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+
+        ul { text-align: left; list-style: none; padding: 0; }
+        li { padding: 5px 0; border-bottom: 1px solid #333; }
     </style>
 </head>
 <body>
 
 <div class="container" id="inputArea">
     <h2>Vokabeln eingeben</h2>
-    <input type="text" id="foreignInput" placeholder="Fremdsprache (z.B. Hello)">
-    <input type="text" id="germanInput" placeholder="Deutsch (z.B. Hallo)">
-    <button onclick="addWord()">Hinzufügen</button>
-    <p>Gespeicherte Vokabeln: <span id="wordCount">0</span></p>
+    <input type="text" id="foreignInput" placeholder="Fremdsprache">
+    <input type="text" id="germanInput" placeholder="Deutsch">
+    <button onclick="addWord()">Wort hinzufügen</button>
+    <p>Gespeichert: <span id="wordCount">0</span> Wörter</p>
     <hr>
     <h3>Modus wählen</h3>
     <select id="mode">
@@ -28,36 +91,40 @@
         <option value="foreign">Fremdsprache abfragen</option>
         <option value="mixed">Gemischt</option>
     </select>
-    <button onclick="startTraining()" style="background: #28a745;">Trainieren starten</button>
+    <button onclick="startTraining()" style="background: var(--success-color); color: black;">Training starten</button>
 </div>
 
-<div class="container" id="trainingArea">
-    <h2 id="questionLabelText">Was heißt...</h2>
+<div class="container" id="trainingArea" style="display:none;">
+    <div class="stats-header">Fortschritt: <span id="progress">0</span> / <span id="totalRound">0</span></div>
     <h1 id="questionWord">---</h1>
-    <input type="text" id="answerInput" placeholder="Deine Antwort...">
+    <input type="text" id="answerInput" placeholder="Deine Antwort..." autocomplete="off">
     <button onclick="checkAnswer()">Überprüfen</button>
-    <button onclick="skipWord()" style="background: #6c757d;">Ich weiß es nicht</button>
+    <button onclick="skipWord()" style="background: #444; color: white;">Ich weiß es nicht</button>
     <p id="feedback"></p>
 </div>
 
 <div class="container" id="resultArea" style="display:none;">
-    <h2>Fertig!</h2>
-    <p id="stats"></p>
-    <button onclick="restart()">Zurück zum Start</button>
+    <h2>Training abgeschlossen!</h2>
+    <div id="statsDetails"></div>
+    <button onclick="restart()">Neue Liste erstellen</button>
 </div>
 
 <script>
-    let vocabulary = []; // {foreign, german}
+    let vocabulary = []; 
     let sessionWords = []; 
     let wrongWords = [];
     let currentIndex = 0;
-    let currentTask = {}; // {word, targetLang, targetValue}
+    let currentTask = {};
+    
+    // Statistik-Tracking
+    // Speichert pro Wort (Index), in welcher Runde es gelöst wurde
+    let wordAttempts = {}; 
 
     function addWord() {
         const foreign = document.getElementById('foreignInput').value.trim();
         const german = document.getElementById('germanInput').value.trim();
         if (foreign && german) {
-            vocabulary.push({ foreign, german });
+            vocabulary.push({ foreign, german, originalIndex: vocabulary.length });
             document.getElementById('wordCount').innerText = vocabulary.length;
             document.getElementById('foreignInput').value = '';
             document.getElementById('germanInput').value = '';
@@ -67,8 +134,12 @@
 
     function startTraining() {
         if (vocabulary.length === 0) return alert("Bitte erst Vokabeln eingeben!");
+        
         sessionWords = [...vocabulary].sort(() => Math.random() - 0.5);
         wrongWords = [];
+        wordAttempts = {}; 
+        vocabulary.forEach((_, i) => wordAttempts[i] = 1); // Start bei Versuch 1
+        
         currentIndex = 0;
         showView('training');
         nextQuestion();
@@ -77,7 +148,7 @@
     function nextQuestion() {
         if (currentIndex >= sessionWords.length) {
             if (wrongWords.length > 0) {
-                alert("Runde beendet. Jetzt werden die Fehler wiederholt!");
+                alert("Runde beendet. Die Fehler werden wiederholt!");
                 sessionWords = [...wrongWords].sort(() => Math.random() - 0.5);
                 wrongWords = [];
                 currentIndex = 0;
@@ -86,6 +157,9 @@
             }
         }
 
+        document.getElementById('progress').innerText = currentIndex + 1;
+        document.getElementById('totalRound').innerText = sessionWords.length;
+
         const word = sessionWords[currentIndex];
         const mode = document.getElementById('mode').value;
         let askForeign = mode === 'foreign';
@@ -93,7 +167,8 @@
 
         currentTask = {
             display: askForeign ? word.german : word.foreign,
-            correct: askForeign ? word.foreign : word.german
+            correct: askForeign ? word.foreign : word.german,
+            originalIndex: word.originalIndex
         };
 
         document.getElementById('questionWord').innerText = currentTask.display;
@@ -105,28 +180,53 @@
     function checkAnswer() {
         const userAns = document.getElementById('answerInput').value.trim().toLowerCase();
         const correctAns = currentTask.correct.toLowerCase();
+        const feedbackEl = document.getElementById('feedback');
 
         if (userAns === correctAns) {
-            document.getElementById('feedback').innerHTML = "✅ Richtig!";
+            feedbackEl.className = "correct";
+            feedbackEl.innerHTML = "✅ Richtig!";
             currentIndex++;
-            setTimeout(nextQuestion, 1000);
+            setTimeout(nextQuestion, 800);
         } else {
-            document.getElementById('feedback').innerHTML = `❌ Falsch! Richtig wäre: <b>${currentTask.correct}</b>`;
-            if (!wrongWords.includes(sessionWords[currentIndex])) {
-                wrongWords.push(sessionWords[currentIndex]);
-            }
-            currentIndex++;
-            setTimeout(nextQuestion, 2000);
+            feedbackEl.className = "wrong";
+            feedbackEl.innerHTML = `❌ Falsch! Richtig: ${currentTask.correct}`;
+            markAsWrong();
         }
     }
 
     function skipWord() {
-        document.getElementById('feedback').innerHTML = `Lösung: <b>${currentTask.correct}</b>`;
-        if (!wrongWords.includes(sessionWords[currentIndex])) {
-            wrongWords.push(sessionWords[currentIndex]);
+        const feedbackEl = document.getElementById('feedback');
+        feedbackEl.className = "wrong";
+        feedbackEl.innerHTML = `Lösung: ${currentTask.correct}`;
+        markAsWrong();
+    }
+
+    function markAsWrong() {
+        const currentWordObj = sessionWords[currentIndex];
+        if (!wrongWords.includes(currentWordObj)) {
+            wrongWords.push(currentWordObj);
+            wordAttempts[currentWordObj.originalIndex]++; // Erhöhe Versuchszähler für dieses Wort
         }
         currentIndex++;
-        setTimeout(nextQuestion, 2000);
+        setTimeout(nextQuestion, 1500);
+    }
+
+    function showResult() {
+        showView('result');
+        const statsDiv = document.getElementById('statsDetails');
+        
+        // Zähle wie viele Wörter bei welchem Versuch fertig waren
+        let summary = {};
+        Object.values(wordAttempts).forEach(attempt => {
+            summary[attempt] = (summary[attempt] || 0) + 1;
+        });
+
+        let html = "<ul>";
+        for (let attempt in summary) {
+            html += `<li>Im <b>${attempt}. Versuch</b> gelöst: ${summary[attempt]} Wort/Wörter</li>`;
+        }
+        html += "</ul>";
+        statsDiv.innerHTML = html;
     }
 
     function showView(view) {
@@ -135,14 +235,16 @@
         document.getElementById('resultArea').style.display = view === 'result' ? 'block' : 'none';
     }
 
-    function showResult() {
-        showView('result');
-        document.getElementById('stats').innerText = "Du hast alle Vokabeln erfolgreich gelernt!";
-    }
-
     function restart() {
+        vocabulary = [];
+        document.getElementById('wordCount').innerText = "0";
         showView('input');
     }
+
+    // Enter-Taste zum Abschicken nutzen
+    document.getElementById('answerInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkAnswer();
+    });
 </script>
 </body>
 </html>
