@@ -2,13 +2,18 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Mega Animation</title>
+    <title>Vokabeltrainer - Cinematic Edition</title>
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
         
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 0.3s; margin: 0; min-height: 100vh; overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: background 0.5s ease; margin: 0; min-height: 100vh; overflow: hidden; }
         .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 500px; position: relative; z-index: 10; margin-top: 50px; }
+        
+        /* BLITZ EFFEKT KLASSE */
+        body.flash-success { background: #d4edda !important; }
+        body.dark.flash-success { background: #1b4332 !important; }
+
         .top-bar { display: flex; gap: 8px; margin-bottom: 20px; }
         .top-bar button { flex: 1; padding: 10px; cursor: pointer; border-radius: 6px; border: none; background: #65676b; color: white; font-size: 0.8rem; }
         .btn-accent { background: var(--accent) !important; }
@@ -17,22 +22,23 @@
         .hidden { display: none; }
 
         /* JUMP ANIMATION */
-        @keyframes jump { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px) scale(1.05); } }
-        .correct-anim { animation: jump 0.5s ease; border: 3px solid var(--success) !important; }
+        @keyframes jump { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px) scale(1.1); } }
+        .correct-anim { animation: jump 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 4px solid var(--success) !important; }
 
-        /* MEGA KONFETTI */
+        /* KINO-KONFETTI */
         .confetti {
             position: fixed;
-            z-index: 999;
-            font-size: 2.5rem;
+            z-index: 1000;
+            font-size: 2.8rem;
             pointer-events: none;
             user-select: none;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.2));
         }
 
-        @keyframes confettiFall {
-            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-            25% { transform: translate(var(--ld), -150px) rotate(90deg); } /* Schuss nach oben */
-            100% { transform: translate(var(--rd), 100vh) rotate(720deg); opacity: 0; } /* Fall nach unten */
+        @keyframes cinematicFall {
+            0% { transform: translate(0, 0) scale(0) rotate(0deg); opacity: 1; }
+            15% { transform: translate(var(--ld), -250px) scale(1.2) rotate(180deg); opacity: 1; } /* Starker Schuss hoch */
+            100% { transform: translate(var(--rd), 110vh) scale(0.8) rotate(1080deg); opacity: 0; } /* Langsames Schweben runter */
         }
     </style>
 </head>
@@ -48,29 +54,29 @@
     </div>
 
     <div id="inputArea">
-        <h2>Vokabeln</h2>
+        <h2>Vokabel-Zentrale</h2>
         <input type="text" id="foreign" placeholder="Fremdsprache">
         <input type="text" id="german" placeholder="Deutsch">
         <button class="main-btn" onclick="addWord()">Hinzufügen</button>
-        <p style="text-align: center;">Wörter: <b id="wordCount">0</b></p>
+        <p style="text-align: center;">Vokabeln im Speicher: <b id="wordCount">0</b></p>
         <hr>
-        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">START</button>
+        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">FILM AB! (Start)</button>
     </div>
 
     <div id="trainingArea" class="hidden">
         <div style="text-align: center; color: var(--accent); font-weight: bold; margin-bottom: 10px;">
-            Richtig: <span id="correctNum">0</span> von <span id="processedNum">0</span>
+            Erfolg: <span id="correctNum">0</span> von <span id="processedNum">0</span>
         </div>
-        <h1 id="qWord" style="text-align: center;">---</h1>
-        <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
-        <button class="main-btn" onclick="check()">Prüfen</button>
-        <p id="feedback" style="text-align:center; font-weight:bold; min-height:30px;"></p>
+        <h1 id="qWord" style="text-align: center; font-size: 2.5rem;">---</h1>
+        <input type="text" id="ansInput" placeholder="Deine Lösung..." autocomplete="off">
+        <button class="main-btn" onclick="check()">Überprüfen</button>
+        <p id="feedback" style="text-align:center; font-weight:bold; min-height:40px; font-size: 1.8rem;"></p>
     </div>
 
     <div id="resultArea" class="hidden">
-        <h2 style="text-align: center;">🎉 Ergebnis</h2>
+        <h2 style="text-align: center;">👑 Meisterleistung!</h2>
         <div id="statsDetails"></div>
-        <button class="main-btn" onclick="location.reload()">Neustart</button>
+        <button class="main-btn" onclick="location.reload()">Zurück zum Start</button>
     </div>
 </div>
 
@@ -78,12 +84,12 @@
     let vocab = [], session = [], wrongs = [], attempts = {}, currentIdx = 0, correctInSession = 0, task = {};
 
     function toggleDark() { document.body.classList.toggle('dark'); }
-    function saveToStorage() { localStorage.setItem('vok_v_mega', JSON.stringify(vocab)); document.getElementById('wordCount').innerText = vocab.length; }
-    function loadFromStorage() { const d = localStorage.getItem('vok_v_mega'); if(d){ vocab = JSON.parse(d); document.getElementById('wordCount').innerText = vocab.length; } }
+    function saveToStorage() { localStorage.setItem('vok_v_cinematic', JSON.stringify(vocab)); document.getElementById('wordCount').innerText = vocab.length; }
+    function loadFromStorage() { const d = localStorage.getItem('vok_v_cinematic'); if(d){ vocab = JSON.parse(d); document.getElementById('wordCount').innerText = vocab.length; } }
     function addWord() { const f = document.getElementById('foreign').value, g = document.getElementById('german').value; if(f&&g){ vocab.push({f,g,id:Date.now()}); saveToStorage(); document.getElementById('foreign').value=''; document.getElementById('german').value=''; document.getElementById('foreign').focus(); } }
-    function exportList() { const b = new Blob([JSON.stringify(vocab)], {type:"application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = "vokabeln.json"; a.click(); }
+    function exportList() { const b = new Blob([JSON.stringify(vocab)], {type:"application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = "vokabel-kino.json"; a.click(); }
     function importList(i) { const r = new FileReader(); r.onload = (e) => { vocab = JSON.parse(e.target.result); saveToStorage(); alert("Geladen!"); }; r.readAsText(i.files[0]); }
-    function clearList() { if(confirm("Löschen?")) { vocab = []; saveToStorage(); } }
+    function clearList() { if(confirm("Alles löschen?")) { vocab = []; saveToStorage(); } }
 
     function startTraining() {
         if(vocab.length === 0) return;
@@ -113,43 +119,51 @@
         const inp = document.getElementById('ansInput');
         if(inp.value.trim().toLowerCase() === task.a.toLowerCase()) {
             if(!wrongs.includes(session[currentIdx])) correctInSession++;
-            document.getElementById('feedback').innerText = "✨ MEGA! ✨";
+            document.getElementById('feedback').innerText = "🏆 PERFEKT! 🏆";
             inp.classList.add('correct-anim');
-            triggerExplosion();
-            currentIdx++; setTimeout(next, 1200);
+            
+            // BLITZ UND EXPLOSION
+            document.body.classList.add('flash-success');
+            setTimeout(() => document.body.classList.remove('flash-success'), 600);
+            
+            triggerMegaExplosion();
+            currentIdx++; 
+            setTimeout(next, 1500); // Kurz warten für den Effekt
         } else {
             document.getElementById('feedback').innerText = "💡 Lösung: " + task.a;
             if(!wrongs.includes(session[currentIdx])) { wrongs.push(session[currentIdx]); attempts[task.id]++; }
-            currentIdx++; setTimeout(next, 2000);
+            currentIdx++; 
+            setTimeout(next, 2500);
         }
     }
 
-    function triggerExplosion() {
-        const emojis = ['🎉','✨','⭐','🌟','🌈','🔥','🎈','🏆','🍬'];
-        for(let i=0; i<25; i++) {
+    function triggerMegaExplosion() {
+        const emojis = ['🎉','✨','⭐','🌟','🌈','🔥','🎈','🏆','🍬','💎','⚡','🔥','🦄','🏅'];
+        for(let i=0; i<40; i++) {
             const conf = document.createElement('div');
             conf.className = 'confetti';
             conf.innerText = emojis[Math.floor(Math.random()*emojis.length)];
             
-            // Startposition: Mitte des Bildschirms
+            // Startposition: Mittig über dem Eingabefeld
             conf.style.left = '50vw';
-            conf.style.top = '50vh';
+            conf.style.top = '60vh';
             
-            // Zufällige Flugweiten für CSS-Variablen
-            conf.style.setProperty('--ld', (Math.random() * 600 - 300) + "px"); // Links/Rechts Schuss
-            conf.style.setProperty('--rd', (Math.random() * 800 - 400) + "px"); // Endposition beim Fallen
+            // Zufällige Flugweiten für CSS-Variablen (Großer Radius)
+            conf.style.setProperty('--ld', (Math.random() * 1000 - 500) + "px"); // Massiver Schuss zur Seite
+            conf.style.setProperty('--rd', (Math.random() * 1200 - 600) + "px"); // Weites Fallen
             
-            conf.style.animation = `confettiFall ${1.5 + Math.random()}s forwards ease-in-out`;
+            // 5 Sekunden Dauer, langsames Ende
+            conf.style.animation = `cinematicFall 5s forwards cubic-bezier(0.1, 0.7, 0.1, 1)`;
             
             document.body.appendChild(conf);
-            setTimeout(() => conf.remove(), 2500);
+            setTimeout(() => conf.remove(), 5000); // Bleibt 5 Sek im DOM
         }
     }
 
     function renderStats() {
         let h = "<ul>", s = {};
         Object.values(attempts).forEach(a => s[a] = (s[a] || 0) + 1);
-        for(let a in s) h += `<li><b>${s[a]} Wörter</b> im ${a}. Versuch</li>`;
+        for(let a in s) h += `<li><b>${s[a]} Wörter</b> im ${a}. Versuch gelöst</li>`;
         document.getElementById('statsDetails').innerHTML = h + "</ul>";
     }
 
