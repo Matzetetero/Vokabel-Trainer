@@ -2,77 +2,49 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Ultimate Edition</title>
+    <title>Vokabeltrainer - Finaler Fix</title>
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
-        
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 20px; 
-            transition: 0.3s; 
-            margin: 0; 
-            overflow-x: hidden; 
-        }
-
-        .container { 
-            background: var(--card); 
-            padding: 25px; 
-            border-radius: 15px; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2); 
-            width: 100%; 
-            max-width: 500px; 
-            z-index: 10;
-        }
-
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 0.3s; margin: 0; overflow: hidden; }
+        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 500px; position: relative; z-index: 10; }
         .top-bar { display: flex; gap: 8px; margin-bottom: 20px; }
         .top-bar button { flex: 1; padding: 10px; cursor: pointer; border-radius: 6px; border: none; background: #65676b; color: white; font-size: 0.8rem; }
-        .btn-accent { background: var(--accent) !important; }
-
-        input, select, .main-btn { 
-            margin: 10px 0; padding: 12px; width: 100%; 
-            box-sizing: border-box; border-radius: 8px; 
-            border: 1px solid #ccc; background: var(--card); 
-            color: var(--text); font-size: 1rem; 
-        }
-
+        input, select, .main-btn { margin: 10px 0; padding: 12px; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; background: var(--card); color: var(--text); font-size: 1rem; }
         .main-btn { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
         .stats-live { font-size: 1.1rem; font-weight: bold; text-align: center; margin-bottom: 15px; color: var(--accent); }
         #feedback { min-height: 30px; margin: 15px 0; font-weight: bold; text-align: center; font-size: 1.2rem; }
         .hidden { display: none; }
-        
-        .list-preview { 
-            margin-top: 20px; max-height: 150px; overflow-y: auto; 
-            font-size: 0.8rem; border-top: 1px solid #ccc; padding-top: 10px; 
-        }
+        .list-preview { margin-top: 20px; max-height: 150px; overflow-y: auto; font-size: 0.8rem; border-top: 1px solid #ccc; padding-top: 10px; }
 
-        /* Animationen für das Input-Feld */
-        @keyframes successPop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        .correct-anim { animation: successPop 0.4s ease; border: 2px solid var(--success) !important; }
-        
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-        .wrong-anim { animation: shake 0.4s ease; border: 2px solid var(--error) !important; }
-
-        /* Konfetti Partikel Style */
-        .confetti {
-            position: fixed;
+        /* GARANTIERTE KONFETTI-ANIMATION */
+        .confetti-piece {
+            position: absolute;
             width: 10px;
             height: 10px;
-            pointer-events: none;
-            z-index: 999;
+            background: #ffd300;
+            top: -20px;
+            opacity: 0;
+            z-index: 5;
+            animation: fall 2s ease-out forwards;
         }
+
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        @keyframes successPop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .correct-anim { animation: successPop 0.4s ease; border: 2px solid var(--success) !important; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        .wrong-anim { animation: shake 0.4s ease; border: 2px solid var(--error) !important; }
     </style>
 </head>
 <body onload="loadFromStorage()">
 
 <div class="container">
     <div class="top-bar">
-        <button class="btn-accent" onclick="toggleDark()">🌓 Dark Mode</button>
+        <button onclick="toggleDark()">🌓 Dark Mode</button>
         <button onclick="exportList()">💾 Export</button>
         <button onclick="document.getElementById('importFile').click()">📂 Import</button>
         <button onclick="clearList()" style="background: var(--error)">🗑️ Löschen</button>
@@ -81,20 +53,14 @@
 
     <div id="inputArea">
         <h2>Vokabeln verwalten</h2>
-        <input type="text" id="foreign" placeholder="Fremdsprache (z.B. English)">
+        <input type="text" id="foreign" placeholder="Fremdsprache">
         <input type="text" id="german" placeholder="Deutsch">
         <button class="main-btn" onclick="addWord()">Wort hinzufügen</button>
-        <p style="text-align: center;">Vokabeln in der Liste: <b id="wordCount">0</b></p>
-        
-        <div id="preview" class="list-preview">Keine Wörter vorhanden.</div>
-
+        <p style="text-align: center;">Vokabeln: <b id="wordCount">0</b></p>
+        <div id="preview" class="list-preview">Keine Wörter.</div>
         <hr>
-        <select id="mode">
-            <option value="de">Deutsch abfragen</option>
-            <option value="foreign">Fremdsprache abfragen</option>
-            <option value="mixed">Zufällig gemischt</option>
-        </select>
-        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">Training starten</button>
+        <select id="mode"><option value="mixed">Zufällig</option></select>
+        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">Start</button>
     </div>
 
     <div id="trainingArea" class="hidden">
@@ -102,164 +68,76 @@
         <h1 id="qWord" style="text-align: center;">---</h1>
         <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
         <button class="main-btn" onclick="check()">Überprüfen</button>
-        <button class="main-btn" style="background: #65676b" onclick="skip()">Weiß ich nicht</button>
         <p id="feedback"></p>
     </div>
 
     <div id="resultArea" class="hidden">
         <h2 style="text-align: center;">Ergebnis</h2>
-        <div id="statsDetails" style="text-align: center;"></div>
+        <div id="statsDetails"></div>
         <button class="main-btn" onclick="location.reload()">Neustart</button>
     </div>
 </div>
 
 <script>
-    let vocab = [], session = [], wrongs = [], attempts = {};
-    let correctInSession = 0, currentIdx = 0, task = {};
+    let vocab = [], session = [], wrongs = [], attempts = {}, correctInSession = 0, currentIdx = 0, task = {};
 
-    // --- SUPER ANIMATION FUNKTION ---
-    function spawnConfetti() {
-        const colors = ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d', '#ff36ff'];
-        for (let i = 0; i < 60; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'confetti';
-            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            particle.style.left = '50%';
-            particle.style.top = '60%';
-            particle.style.borderRadius = Math.random() > 0.5 ? '50%' : '0%';
-            document.body.appendChild(particle);
-
-            const destinationX = (Math.random() - 0.5) * window.innerWidth;
-            const destinationY = (Math.random() - 0.7) * window.innerHeight;
-            const rotation = Math.random() * 720;
-
-            const animation = particle.animate([
-                { transform: 'translate(-50%, -50%) scale(1) rotate(0deg)', opacity: 1 },
-                { transform: `translate(${destinationX}px, ${destinationY}px) scale(0) rotate(${rotation}deg)`, opacity: 0 }
-            ], {
-                duration: 1000 + Math.random() * 1000,
-                easing: 'cubic-bezier(0, .9, .57, 1)',
-                fill: 'forwards'
-            });
-
-            animation.onfinish = () => particle.remove();
+    function triggerConfetti() {
+        const colors = ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6'];
+        for (let i = 0; i < 40; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = Math.random() * 100 + 'vw';
+            piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.animationDelay = Math.random() * 0.5 + 's';
+            piece.style.width = (Math.random() * 10 + 5) + 'px';
+            piece.style.height = piece.style.width;
+            document.body.appendChild(piece);
+            setTimeout(() => piece.remove(), 2500);
         }
     }
 
-    // --- LOGIK ---
     function toggleDark() { document.body.classList.toggle('dark'); }
-
-    function saveToStorage() {
-        localStorage.setItem('vocab_v3', JSON.stringify(vocab));
-        updateUI();
-    }
-
-    function loadFromStorage() {
-        const data = localStorage.getItem('vocab_v3');
-        if (data) vocab = JSON.parse(data);
-        updateUI();
-    }
-
-    function updateUI() {
+    function saveToStorage() { localStorage.setItem('vok_v4', JSON.stringify(vocab)); updateUI(); }
+    function loadFromStorage() { vocab = JSON.parse(localStorage.getItem('vok_v4') || '[]'); updateUI(); }
+    function updateUI() { 
         document.getElementById('wordCount').innerText = vocab.length;
-        const preview = document.getElementById('preview');
-        if (vocab.length > 0) {
-            preview.innerHTML = "<b>Vorschau:</b><br>" + vocab.slice(-5).map(v => `${v.f} = ${v.g}`).join('<br>');
-        } else {
-            preview.innerHTML = "Keine Wörter vorhanden.";
-        }
+        document.getElementById('preview').innerHTML = vocab.length > 0 ? vocab.slice(-3).map(v => `${v.f} = ${v.g}`).join('<br>') : "Leer";
     }
 
     function addWord() {
-        const f = document.getElementById('foreign').value.trim(), g = document.getElementById('german').value.trim();
-        if(f && g) {
-            vocab.push({f, g, id: Date.now() + Math.random()});
-            saveToStorage();
-            document.getElementById('foreign').value = ''; document.getElementById('german').value = '';
-            document.getElementById('foreign').focus();
-        }
+        const f = document.getElementById('foreign').value, g = document.getElementById('german').value;
+        if(f && g) { vocab.push({f, g, id: Date.now()}); saveToStorage(); document.getElementById('foreign').value = ''; document.getElementById('german').value = ''; }
     }
 
     function startTraining() {
-        if(vocab.length === 0) return alert("Füge erst Wörter hinzu!");
+        if(vocab.length === 0) return;
         session = [...vocab].sort(() => Math.random() - 0.5);
-        wrongs = []; currentIdx = 0; correctInSession = 0; attempts = {};
-        vocab.forEach(v => attempts[v.id] = 1);
-        show('trainingArea');
-        next();
+        currentIdx = 0; correctInSession = 0;
+        show('trainingArea'); next();
     }
 
     function next() {
-        if(currentIdx >= session.length) {
-            if(wrongs.length > 0) {
-                session = [...wrongs].sort(() => Math.random() - 0.5);
-                wrongs = []; currentIdx = 0; next();
-            } else { show('resultArea'); renderStats(); return; }
-        }
-        document.getElementById('correctNum').innerText = correctInSession;
-        document.getElementById('processedNum').innerText = currentIdx + 1;
-        
-        let word = session[currentIdx], m = document.getElementById('mode').value;
-        let askF = m === 'foreign' || (m === 'mixed' && Math.random() > 0.5);
-        task = { q: askF ? word.g : word.f, a: askF ? word.f : word.g, id: word.id };
-        
+        if(currentIdx >= session.length) { show('resultArea'); document.getElementById('statsDetails').innerHTML = `<h3>${correctInSession} / ${session.length} richtig!</h3>`; return; }
+        task = { q: session[currentIdx].f, a: session[currentIdx].g };
         document.getElementById('qWord').innerText = task.q;
-        const inp = document.getElementById('ansInput');
-        inp.value = ''; inp.className = ''; document.getElementById('feedback').innerText = '';
-        inp.focus();
+        document.getElementById('ansInput').value = '';
+        document.getElementById('ansInput').className = '';
     }
 
     function check() {
         const inp = document.getElementById('ansInput');
-        const fb = document.getElementById('feedback');
         if(inp.value.trim().toLowerCase() === task.a.toLowerCase()) {
-            spawnConfetti(); // Animation starten
+            triggerConfetti();
             inp.classList.add('correct-anim');
-            fb.innerText = "Richtig! 🎉";
-            fb.style.color = "var(--success)";
-            if(attempts[task.id] === 1) correctInSession++;
-            setTimeout(() => { currentIdx++; next(); }, 800);
+            correctInSession++;
+            setTimeout(() => { currentIdx++; next(); }, 1000);
         } else {
             inp.classList.add('wrong-anim');
-            fb.innerText = `Falsch! Richtig wäre: ${task.a}`;
-            fb.style.color = "var(--error)";
-            if(!wrongs.some(w => w.id === task.id)) wrongs.push(vocab.find(v => v.id === task.id));
-            attempts[task.id] = 0;
         }
     }
 
-    function skip() {
-        if(!wrongs.some(w => w.id === task.id)) wrongs.push(vocab.find(v => v.id === task.id));
-        attempts[task.id] = 0; currentIdx++; next();
-    }
-
-    function show(id) {
-        ['inputArea', 'trainingArea', 'resultArea'].forEach(a => document.getElementById(a).classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-    }
-
-    function renderStats() {
-        const rate = Math.round((correctInSession / vocab.length) * 100);
-        document.getElementById('statsDetails').innerHTML = `<h3>Training beendet!</h3><h1 style="font-size:3rem">${rate}%</h1><p>Direkt gewusst: ${correctInSession} von ${vocab.length}</p>`;
-        for(let i=0; i<3; i++) setTimeout(spawnConfetti, i*300);
-    }
-
-    function clearList() { if(confirm("Alles löschen?")) { vocab = []; saveToStorage(); } }
-
-    function exportList() {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([JSON.stringify(vocab)], {type: "application/json"}));
-        a.download = "vokabeln.json"; a.click();
-    }
-
-    function importList(el) {
-        const reader = new FileReader();
-        reader.onload = e => { vocab = JSON.parse(e.target.result); saveToStorage(); alert("Geladen!"); };
-        reader.readAsText(el.files[0]);
-    }
-
-    document.getElementById("ansInput").addEventListener("keypress", (e) => { if(e.key === "Enter") check(); });
+    function show(id) { document.querySelectorAll('.container > div').forEach(d => d.id !== 'trainingArea' && d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+    document.getElementById("ansInput").addEventListener("keypress", (e) => e.key === "Enter" && check());
 </script>
-
 </body>
 </html>
