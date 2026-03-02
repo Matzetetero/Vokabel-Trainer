@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer Ultimate Fix</title>
+    <title>Vokabeltrainer - Import Fix</title>
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
@@ -34,11 +34,11 @@
     </div>
 
     <div id="inputArea">
-        <h2>Vokabeln</h2>
+        <h2>Vokabeln verwalten</h2>
         <input type="text" id="foreign" placeholder="Fremdsprache">
         <input type="text" id="german" placeholder="Deutsch">
-        <button class="main-btn" onclick="addWord()">Hinzufügen</button>
-        <p style="text-align: center;">Wörter in Liste: <span id="wordCount">0</span></p>
+        <button class="main-btn" onclick="addWord()">Wort hinzufügen</button>
+        <p style="text-align: center;">Wörter geladen: <span id="wordCount">0</span></p>
         <hr>
         <select id="mode">
             <option value="de">Deutsch abfragen</option>
@@ -51,14 +51,14 @@
     <div id="trainingArea" class="hidden">
         <div class="stats-live">Richtig: <span id="correctNum">0</span> von <span id="processedNum">0</span></div>
         <h1 id="qWord" style="text-align: center;">---</h1>
-        <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
+        <input type="text" id="ansInput" placeholder="Deine Antwort..." autocomplete="off">
         <button class="main-btn" onclick="check()">Überprüfen</button>
         <button class="main-btn" style="background: #65676b" onclick="skip()">Weiß ich nicht</button>
         <p id="feedback"></p>
     </div>
 
     <div id="resultArea" class="hidden">
-        <h2 style="text-align: center;">Fertig!</h2>
+        <h2 style="text-align: center;">Ergebnis</h2>
         <div id="statsDetails"></div>
         <button class="main-btn" onclick="location.reload()">Neustart</button>
     </div>
@@ -72,12 +72,12 @@
 
     // SPEICHERN & LADEN
     function saveToStorage() {
-        localStorage.setItem('vocab_storage', JSON.stringify(vocab));
+        localStorage.setItem('vocab_data_v2', JSON.stringify(vocab));
         document.getElementById('wordCount').innerText = vocab.length;
     }
 
     function loadFromStorage() {
-        const data = localStorage.getItem('vocab_storage');
+        const data = localStorage.getItem('vocab_data_v2');
         if (data) {
             vocab = JSON.parse(data);
             document.getElementById('wordCount').innerText = vocab.length;
@@ -98,31 +98,38 @@
         }
     }
 
-    // EXPORT & IMPORT (FIXED)
+    // EXPORT
     function exportList() {
         if(vocab.length === 0) return alert("Liste leer!");
         const blob = new Blob([JSON.stringify(vocab)], {type: "application/json"});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = "vokabeltrainer_liste.json";
+        a.download = "vokabeln.json";
         a.click();
     }
 
+    // IMPORT (FIXED)
     function importList(event) {
-        const file = event.target.files[0];
+        const file = event.target.files[0]; // Greift korrekt auf die Datei zu
         if (!file) return;
+
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = function(e) {
             try {
-                const imported = JSON.parse(e.target.result);
-                if (Array.isArray(imported)) {
-                    vocab = imported;
-                    saveToStorage(); // Direkt speichern
-                    alert("Import erfolgreich! " + vocab.length + " Wörter geladen.");
+                const importedData = JSON.parse(e.target.result);
+                if (Array.isArray(importedData)) {
+                    vocab = importedData;
+                    saveToStorage(); // Speichert & aktualisiert wordCount
+                    alert("Erfolg! " + vocab.length + " Vokabeln importiert.");
+                } else {
+                    alert("Fehler: Die Datei hat kein gültiges Format.");
                 }
-            } catch (err) { alert("Ungültige Datei!"); }
+            } catch (err) {
+                alert("Fehler beim Lesen der JSON-Datei.");
+            }
         };
         reader.readAsText(file);
+        event.target.value = ""; // Reset für erneuten Import
     }
 
     // TRAINING LOGIK
