@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Animation Fix</title>
+    <title>Vokabeltrainer - Animation Ultimate Fix</title>
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
         body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
@@ -10,7 +10,7 @@
         body { 
             font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); 
             display: flex; flex-direction: column; align-items: center; padding: 20px; 
-            transition: 0.3s; margin: 0; min-height: 100vh; position: relative;
+            transition: 0.3s; margin: 0; min-height: 100vh;
         }
 
         .container { 
@@ -28,35 +28,47 @@
         
         .hidden { display: none; }
 
-        /* ANIMATIONEN */
+        /* --- FESTE ANIMATIONEN --- */
         @keyframes jump {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05) translateY(-5px); }
         }
         .correct-anim { animation: jump 0.4s ease; border: 3px solid var(--success) !important; }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
         }
         .wrong-anim { animation: shake 0.4s ease; border: 3px solid var(--error) !important; }
 
-        /* KONFETTI ELEMENTE */
-        .particle {
-            position: fixed;
-            left: 50%;
+        /* --- KONFETTI CSS --- */
+        .confetti-container {
+            position: absolute;
             top: 50%;
-            font-size: 2rem;
+            left: 50%;
+            width: 1px;
+            height: 1px;
             pointer-events: none;
             z-index: 9999;
-            user-select: none;
+        }
+
+        .confetti-item {
+            position: absolute;
+            font-size: 2rem;
+            animation: explode 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) rotate(var(--tr)); opacity: 0; }
         }
     </style>
 </head>
 <body onload="loadFromStorage()">
 
-<div class="container">
+<div class="container" id="gameContainer">
     <div class="top-bar">
         <button class="btn-accent" onclick="toggleDark()">🌓 Mode</button>
         <button onclick="exportList()">💾 Export</button>
@@ -69,7 +81,7 @@
         <h2>Vokabeln verwalten</h2>
         <input type="text" id="foreign" placeholder="Fremdsprache">
         <input type="text" id="german" placeholder="Deutsch">
-        <button class="main-btn" onclick="addWord()">Hinzufügen</button>
+        <button class="main-btn" onclick="addWord()">Wort hinzufügen</button>
         <p style="text-align: center;">Anzahl: <b id="wordCount">0</b></p>
         <hr>
         <select id="mode">
@@ -85,10 +97,16 @@
             Richtig: <span id="correctNum">0</span> von <span id="processedNum">0</span>
         </div>
         <h1 id="qWord" style="text-align: center; margin: 10px 0;">---</h1>
-        <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
+        
+        <!-- Container für die Explosion -->
+        <div style="position: relative;">
+            <input type="text" id="ansInput" placeholder="Antwort..." autocomplete="off">
+            <div id="confettiAnchor" class="confetti-container"></div>
+        </div>
+
         <button class="main-btn" onclick="check()">Überprüfen</button>
         <button class="main-btn" style="background: #65676b" onclick="skip()">Weiß nicht</button>
-        <p id="feedback" style="text-align:center; font-weight:bold; min-height:30px;"></p>
+        <p id="feedback" style="text-align:center; font-weight:bold; min-height:30px; margin-top: 10px;"></p>
     </div>
 
     <div id="resultArea" class="hidden">
@@ -104,12 +122,12 @@
     function toggleDark() { document.body.classList.toggle('dark'); }
 
     function saveToStorage() {
-        localStorage.setItem('vok_data_final', JSON.stringify(vocab));
+        localStorage.setItem('vok_v_final_final', JSON.stringify(vocab));
         document.getElementById('wordCount').innerText = vocab.length;
     }
 
     function loadFromStorage() {
-        const data = localStorage.getItem('vok_data_final');
+        const data = localStorage.getItem('vok_v_final_final');
         if (data) {
             vocab = JSON.parse(data);
             document.getElementById('wordCount').innerText = vocab.length;
@@ -136,12 +154,12 @@
         reader.onload = (e) => {
             vocab = JSON.parse(e.target.result);
             saveToStorage();
-            alert("Importiert!");
+            alert("Vokabeln geladen!");
         };
         reader.readAsText(input.files[0]);
     }
 
-    function clearList() { if(confirm("Löschen?")) { vocab = []; saveToStorage(); } }
+    function clearList() { if(confirm("Wirklich alles löschen?")) { vocab = []; saveToStorage(); } }
 
     function startTraining() {
         if(vocab.length === 0) return;
@@ -177,9 +195,11 @@
             if(!wrongs.includes(session[currentIdx])) correctInSession++;
             document.getElementById('feedback').innerText = "✨ RICHTIG! ✨";
             inp.classList.add('correct-anim');
-            // EXPLOSIONS-EFFEKT
-            for(let i=0; i<15; i++) { createParticle(); }
-            currentIdx++; setTimeout(next, 800);
+            
+            // CSS EXPLOSION AUSLÖSEN
+            createExplosion();
+            
+            currentIdx++; setTimeout(next, 900);
         } else {
             document.getElementById('feedback').innerText = "💡 Lösung: " + task.a;
             inp.classList.add('wrong-anim');
@@ -188,35 +208,27 @@
         }
     }
 
-    function createParticle() {
-        const el = document.createElement('div');
-        el.className = 'particle';
-        el.innerText = ['🎉','✨','⭐','🌟','🌈'][Math.floor(Math.random()*5)];
-        document.body.appendChild(el);
-
-        const angle = Math.random() * Math.PI * 2;
-        const velocity = 10 + Math.random() * 20;
-        const vx = Math.cos(angle) * velocity;
-        const vy = Math.sin(angle) * velocity;
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2;
-        let opacity = 1;
-
-        function animate() {
-            x += vx;
-            y += vy;
-            opacity -= 0.02;
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.style.opacity = opacity;
-
-            if(opacity > 0) {
-                requestAnimationFrame(animate);
-            } else {
-                el.remove();
-            }
+    function createExplosion() {
+        const anchor = document.getElementById('confettiAnchor');
+        const emojis = ['🎉','✨','⭐','🌟','🌈','🔥','🎈'];
+        
+        for(let i=0; i<12; i++) {
+            const item = document.createElement('div');
+            item.className = 'confetti-item';
+            item.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            
+            // Zufällige Flugrichtung berechnen
+            const tx = (Math.random() - 0.5) * 300 + "px";
+            const ty = (Math.random() * -200 - 50) + "px";
+            const tr = (Math.random() * 360) + "deg";
+            
+            item.style.setProperty('--tx', tx);
+            item.style.setProperty('--ty', ty);
+            item.style.setProperty('--tr', tr);
+            
+            anchor.appendChild(item);
+            setTimeout(() => item.remove(), 1000);
         }
-        requestAnimationFrame(animate);
     }
 
     function skip() {
