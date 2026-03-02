@@ -2,140 +2,199 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Vokabeltrainer - Flash Edition</title>
+    <title>Vokabeltrainer Ultimate Pro</title>
     <style>
-        :root { --bg: #f0f2f5; --card: white; --text: #1c1e21; --accent: #007bff; --success: #28a745; }
-        body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; }
+        :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --accent: #007bff; --success: #28a745; --error: #dc3545; }
+        body.dark { --bg: #18191a; --card: #242526; --text: #e4e6eb; --accent: #4599ff; --success: #2ecc71; --error: #ff4d4d; }
         
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: background 0.2s; margin: 0; min-height: 100vh; overflow: hidden; }
-        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 400px; z-index: 10; margin-top: 50px; text-align: center; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 0.3s; margin: 0; min-height: 100vh; overflow-x: hidden; }
+        .container { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); width: 100%; max-width: 500px; position: relative; z-index: 10; margin-top: 50px; }
         
-        /* DER SUPER-BLITZ */
-        .flash-active { background: #28a745 !important; transition: 0.1s; }
+        /* DER BLITZ-EFFEKT */
+        body.flash-green { background: var(--success) !important; transition: 0.1s; }
 
-        /* RIESEN-EMOJI ANIMATION */
-        #superEmoji {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            font-size: 150px; pointer-events: none; z-index: 1000; opacity: 0;
-        }
-        .emoji-pop { animation: pop 2s forwards; }
-        @keyframes pop {
+        /* RIESEN EMOJI ANIMATION */
+        #bigEmoji { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 180px; z-index: 9999; pointer-events: none; opacity: 0; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3)); }
+        .pop-animation { animation: emojiPop 2.5s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards; }
+        @keyframes emojiPop {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-            20% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
-            80% { transform: translate(-50%, -100%) scale(1.2); opacity: 1; }
-            100% { transform: translate(-50%, -200%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            80% { transform: translate(-50%, -80%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -150%) scale(0); opacity: 0; }
         }
 
-        input, button { margin: 10px 0; padding: 12px; width: 100%; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
-        button { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
+        .top-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .top-bar button { flex: 1; min-width: 90px; padding: 8px; cursor: pointer; border-radius: 6px; border: none; background: #65676b; color: white; font-size: 0.8rem; }
+        .btn-accent { background: var(--accent) !important; }
+
+        input, select, .main-btn { margin: 10px 0; padding: 12px; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; background: var(--card); color: var(--text); font-size: 1rem; }
+        .main-btn { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
+        
         .hidden { display: none; }
         
-        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        .correct-field { animation: bounce 0.5s ease; border: 3px solid #28a745 !important; }
+        @keyframes fieldJump { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        .correct-field { animation: fieldJump 0.5s ease; border: 4px solid var(--success) !important; }
     </style>
 </head>
-<body onload="load()">
+<body onload="loadData()">
 
-<div id="superEmoji">🎉</div>
+<div id="bigEmoji">🎉</div>
 
 <div class="container">
+    <!-- BUTTON BAR -->
+    <div class="top-bar">
+        <button class="btn-accent" onclick="toggleDark()">🌓 Mode</button>
+        <button onclick="exportJSON()">💾 Export</button>
+        <button onclick="document.getElementById('importFile').click()">📂 Import</button>
+        <button onclick="clearAll()" style="background: var(--error)">🗑️ Reset</button>
+        <input type="file" id="importFile" class="hidden" onchange="importJSON(this)" accept=".json">
+    </div>
+
+    <!-- STARTSEITE -->
     <div id="inputArea">
-        <h2>Vokabeln</h2>
-        <input type="text" id="f" placeholder="Fremdsprache">
-        <input type="text" id="g" placeholder="Deutsch">
-        <button onclick="add()">Hinzufügen</button>
-        <p>Anzahl: <b id="count">0</b></p>
+        <h2>Vokabeln hinzufügen</h2>
+        <input type="text" id="wordF" placeholder="Fremdsprache" onkeydown="if(event.key==='Enter') document.getElementById('wordG').focus()">
+        <input type="text" id="wordG" placeholder="Deutsch" onkeydown="if(event.key==='Enter') addWord()">
+        <button class="main-btn" onclick="addWord()">Wort speichern</button>
+        <p style="text-align: center;">Vokabeln geladen: <b id="totalCount">0</b></p>
         <hr>
-        <button style="background: #28a745" onclick="start()">START</button>
+        <select id="trainMode">
+            <option value="de">Deutsch abfragen</option>
+            <option value="foreign">Fremdsprache abfragen</option>
+            <option value="mixed">Zufällig gemischt</option>
+        </select>
+        <button class="main-btn" style="background: var(--success)" onclick="startTraining()">TRAINING STARTEN</button>
     </div>
 
+    <!-- ÜBUNGSSEITE -->
     <div id="trainingArea" class="hidden">
-        <p>Richtig: <span id="cNum">0</span> / <span id="pNum">0</span></p>
-        <h1 id="q">---</h1>
-        <input type="text" id="ans" placeholder="Antwort..." autocomplete="off">
-        <button onclick="check()">Überprüfen</button>
-        <p id="feed"></p>
+        <div style="text-align: center; font-weight: bold; color: var(--accent); margin-bottom: 10px;">
+            Richtig: <span id="correctNum">0</span> von <span id="currentRoundNum">0</span>
+        </div>
+        <h1 id="questionDisplay" style="text-align: center; font-size: 2.2rem;">---</h1>
+        <input type="text" id="answerField" placeholder="Antwort eingeben..." autocomplete="off">
+        <button class="main-btn" onclick="checkAnswer()">Überprüfen</button>
+        <button class="main-btn" style="background: #65676b" onclick="skipWord()">Ich weiß es nicht</button>
+        <p id="feedbackText" style="text-align: center; font-weight: bold; min-height: 30px; margin-top: 10px;"></p>
     </div>
 
+    <!-- ENDSEITE -->
     <div id="resultArea" class="hidden">
-        <h2>Fertig!</h2>
-        <div id="res"></div>
-        <button onclick="location.reload()">Neustart</button>
+        <h2 style="text-align: center;">Training beendet!</h2>
+        <div id="finalStats"></div>
+        <button class="main-btn" onclick="location.reload()">Neustart</button>
     </div>
 </div>
 
 <script>
-    let v = [], s = [], wr = [], att = {}, cur = 0, ok = 0, task = {};
+    let vocabs = [], session = [], mistakes = [], attempts = {}, idx = 0, corrects = 0, currentTask = {};
 
-    function load() { 
-        let d = localStorage.getItem('vok_v_final'); 
-        if(d) { v = JSON.parse(d); document.getElementById('count').innerText = v.length; }
+    function toggleDark() { document.body.classList.toggle('dark'); }
+
+    function loadData() {
+        const d = localStorage.getItem('vok_ultimate_v1');
+        if(d) { vocabs = JSON.parse(d); document.getElementById('totalCount').innerText = vocabs.length; }
     }
 
-    function add() {
-        let f = document.getElementById('f').value, g = document.getElementById('g').value;
-        if(f && g) { v.push({f,g,id:Date.now()}); localStorage.setItem('vok_v_final', JSON.stringify(v)); document.getElementById('count').innerText = v.length; document.getElementById('f').value=''; document.getElementById('g').value=''; document.getElementById('f').focus(); }
+    function addWord() {
+        let f = document.getElementById('wordF').value.trim(), g = document.getElementById('wordG').value.trim();
+        if(f && g) {
+            vocabs.push({f, g, id: Date.now() + Math.random()});
+            localStorage.setItem('vok_ultimate_v1', JSON.stringify(vocabs));
+            document.getElementById('totalCount').innerText = vocabs.length;
+            document.getElementById('wordF').value = ''; document.getElementById('wordG').value = '';
+            document.getElementById('wordF').focus();
+        }
     }
 
-    function start() {
-        if(v.length === 0) return;
-        s = [...v].sort(() => Math.random() - 0.5);
-        wr = []; cur = 0; ok = 0; att = {}; v.forEach(x => att[x.id] = 1);
+    function exportJSON() {
+        const blob = new Blob([JSON.stringify(vocabs)], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "vokabeln.json"; a.click();
+    }
+
+    function importJSON(input) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            vocabs = JSON.parse(e.target.result);
+            localStorage.setItem('vok_ultimate_v1', JSON.stringify(vocabs));
+            document.getElementById('totalCount').innerText = vocabs.length;
+            alert("Vokabeln erfolgreich geladen!");
+        };
+        reader.readAsText(input.files[0]);
+    }
+
+    function clearAll() { if(confirm("Wirklich alles löschen?")) { vocabs = []; localStorage.removeItem('vok_ultimate_v1'); location.reload(); } }
+
+    function startTraining() {
+        if(vocabs.length === 0) return alert("Bitte erst Vokabeln eingeben!");
+        session = [...vocabs].sort(() => Math.random() - 0.5);
+        mistakes = []; idx = 0; corrects = 0; attempts = {};
+        vocabs.forEach(v => attempts[v.id] = 1);
         document.getElementById('inputArea').classList.add('hidden');
         document.getElementById('trainingArea').classList.remove('hidden');
         next();
     }
 
     function next() {
-        if(cur >= s.length) {
-            if(wr.length > 0) { s = [...wr].sort(()=>Math.random()-0.5); wr = []; cur = 0; next(); }
-            else { 
-                document.getElementById('trainingArea').classList.add('hidden');
-                document.getElementById('resultArea').classList.remove('hidden');
-                render(); return; 
-            }
+        if(idx >= session.length) {
+            if(mistakes.length > 0) {
+                alert("Erste Runde vorbei! Die Fehler werden wiederholt.");
+                session = [...mistakes].sort(() => Math.random() - 0.5);
+                mistakes = []; idx = 0; next();
+            } else { finish(); return; }
         }
-        document.getElementById('cNum').innerText = ok;
-        document.getElementById('pNum').innerText = cur + 1;
-        task = { q: s[cur].f, a: s[cur].g, id: s[cur].id };
-        document.getElementById('q').innerText = task.q;
-        document.getElementById('ans').value = '';
-        document.getElementById('ans').className = '';
-        document.getElementById('feed').innerText = '';
-        document.getElementById('ans').focus();
+        document.getElementById('correctNum').innerText = corrects;
+        document.getElementById('currentRoundNum').innerText = idx + 1;
+        
+        let word = session[idx], m = document.getElementById('trainMode').value;
+        let askF = m === 'foreign' || (m === 'mixed' && Math.random() > 0.5);
+        currentTask = { q: askF ? word.g : word.f, a: askF ? word.f : word.g, id: word.id };
+        
+        document.getElementById('questionDisplay').innerText = currentTask.q;
+        const inp = document.getElementById('answerField');
+        inp.value = ''; inp.className = ''; document.getElementById('feedbackText').innerText = '';
+        inp.focus();
     }
 
-    function check() {
-        let i = document.getElementById('ans');
-        if(i.value.trim().toLowerCase() === task.a.toLowerCase()) {
-            if(!wr.includes(s[cur])) ok++;
+    function checkAnswer() {
+        const inp = document.getElementById('answerField');
+        if(inp.value.trim().toLowerCase() === currentTask.a.toLowerCase()) {
+            if(!mistakes.includes(session[idx])) corrects++;
             
             // --- DIE SUPER ANIMATION ---
-            document.body.classList.add('flash-active');
-            let e = document.getElementById('superEmoji');
-            e.innerText = ['🎉','⭐','🏆','🔥','✨'][Math.floor(Math.random()*5)];
-            e.classList.remove('emoji-pop');
-            void e.offsetWidth; // Trick zum Neustart der Animation
-            e.classList.add('emoji-pop');
-            i.classList.add('correct-field');
+            document.body.classList.add('flash-green');
+            const e = document.getElementById('bigEmoji');
+            e.innerText = ['🎉','✨','🏆','🔥','💎','🌈'][Math.floor(Math.random()*6)];
+            e.classList.remove('pop-animation');
+            void e.offsetWidth; // Reset animation
+            e.classList.add('pop-animation');
+            inp.classList.add('correct-field');
             
-            setTimeout(() => document.body.classList.remove('flash-active'), 200);
-            cur++; setTimeout(next, 1500);
+            setTimeout(() => document.body.classList.remove('flash-green'), 250);
+            idx++; setTimeout(next, 1500);
         } else {
-            document.getElementById('feed').innerText = "Falsch! Lösung: " + task.a;
-            if(!wr.includes(s[cur])) { wr.push(s[cur]); att[task.id]++; }
-            cur++; setTimeout(next, 2500);
+            document.getElementById('feedbackText').innerText = "💡 Lösung: " + currentTask.a;
+            if(!mistakes.includes(session[idx])) { mistakes.push(session[idx]); attempts[currentTask.id]++; }
+            idx++; setTimeout(next, 2500);
         }
     }
 
-    function render() {
-        let h = "<ul>", sum = {};
-        Object.values(att).forEach(x => sum[x] = (sum[x] || 0) + 1);
-        for(let k in sum) h += `<li><b>${sum[k]} Wörter</b> im ${k}. Versuch</li>`;
-        document.getElementById('res').innerHTML = h + "</ul>";
+    function skipWord() {
+        document.getElementById('feedbackText').innerText = "💡 Lösung: " + currentTask.a;
+        if(!mistakes.includes(session[idx])) { mistakes.push(session[idx]); attempts[currentTask.id]++; }
+        idx++; setTimeout(next, 2500);
     }
 
-    document.getElementById('ans').onkeypress = (e) => { if(e.key === 'Enter') check(); };
+    function finish() {
+        document.getElementById('trainingArea').classList.add('hidden');
+        document.getElementById('resultArea').classList.remove('hidden');
+        let h = "<ul style='list-style:none; padding:0;'>", sum = {};
+        Object.values(attempts).forEach(a => sum[a] = (sum[a] || 0) + 1);
+        for(let k in sum) h += `<li style='padding:10px; border-bottom:1px solid #ddd;'><b>${sum[k]} Wörter</b> im ${k}. Versuch gelöst</li>`;
+        document.getElementById('finalStats').innerHTML = h + "</ul>";
+    }
+
+    document.getElementById('answerField').onkeypress = (e) => { if(e.key === 'Enter') checkAnswer(); };
 </script>
 </body>
 </html>
